@@ -1,6 +1,6 @@
 {
   "name": "myr2d2",
-  "description": "MyR2D2 — 你的隨行 astromech droid：session 收工落地(save-all)、跨 session 交接與即時門鈴(dropoff/pickup)、工作日誌與日結週結(mission-log/daily-debrief/weekly-debrief)、收尾自檢(damage-report)、跨模型二審(ai-review)、多代理節流(token-optimizer)、航班上行事曆(flight-to-calendar)。繁中本體、中英雙語觸發。zh-TW skillset with bilingual triggers.",
+  "description": "MyR2D2 — 你的隨行 astromech droid：session 收工落地(save-all)、跨 session 交接與即時門鈴(dropoff/pickup)、工作日誌與日結週結(mission-log/daily-debrief/weekly-debrief)、開工簡報(new-mission)、收尾自檢(damage-report)、跨模型二審(ai-review)、帶引用即時查證(ai-search)、多代理節流(token-optimizer)、航班上行事曆(flight-to-calendar)。繁中本體、中英雙語觸發。zh-TW skillset with bilingual triggers.",
   "version": "0.6.0",
   "author": {
     "name": "Eric Lu (tingyulu)",

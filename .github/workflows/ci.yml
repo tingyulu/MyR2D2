@@ -23,8 +23,8 @@ jobs:
           import yaml, glob, re, sys
           fails = 0
           files = sorted(glob.glob('skills/*/SKILL.md'))
-          if len(files) != 10:
-              print(f'FAIL skill 數量 {len(files)} != 10(新增/刪除 skill 要同步改這裡與 README 計數)')
+          if len(files) != 12:
+              print(f'FAIL skill 數量 {len(files)} != 12(新增/刪除 skill 要同步改這裡與 README 計數)')
               fails += 1
           for f in files:
               m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
@@ -103,6 +103,13 @@ jobs:
           for s in sh dash bash ksh zsh; do
             echo "== $s =="
             SH=$s sh skills/ai-review/tests/matrix.sh || exit 1
+          done
+
+      - name: ai-search 行為矩陣(5 shell × 43 項)
+        run: |
+          for s in sh dash bash ksh zsh; do
+            echo "== $s =="
+            SH=$s sh skills/ai-search/tests/matrix.sh || exit 1
           done
 
       - name: mission-log harvest 測試(含 LC_ALL=C 變體)

@@ -8,7 +8,7 @@
     {
       "name": "myr2d2",
       "source": "./",
-      "description": "MyR2D2 — save-all / dropoff / pickup / mission-log / daily-debrief / weekly-debrief / damage-report / ai-review / token-optimizer / flight-to-calendar。繁中本體、中英雙語觸發 (zh-TW body, bilingual triggers)."
+      "description": "MyR2D2 — save-all / dropoff / pickup / mission-log / daily-debrief / weekly-debrief / new-mission / damage-report / ai-review / ai-search / token-optimizer / flight-to-calendar。繁中本體、中英雙語觸發 (zh-TW body, bilingual triggers)."
     }
   ]
 }

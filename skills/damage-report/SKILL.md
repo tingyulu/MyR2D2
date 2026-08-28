@@ -6,7 +6,8 @@ description: '「開發／優化／修 bug／研究查證」類任務收尾的�
 # /damage-report — 收尾自檢（Definition-of-Done Review）
 
 每次完成**開發／優化／解 bug**類任務，寫回報**之前**先跑這份自檢，
-結果附在回報末尾、分兩段。
+結果附在回報末尾、分兩段。（本 skill 管**收工前**；開工前的對應協定——
+先問、給計畫、等明確的「做」才動手——見 [`new-mission`](../new-mission/SKILL.md)，一頭一尾。）
 
 ## 為什麼需要
 

@@ -8,7 +8,7 @@
 
 R2-D2 從來不是主角，但每一集都靠它：把 Death Star 圖紙帶出來、滾過沙漠找到 Obi-Wan、在 X-wing 後座默默修飛船管能源。
 
-MyR2D2 就是這個定位 —— 10 支 skills，管的都是「不做不會死、但做了整個工作流才活得下去」的事:
+MyR2D2 就是這個定位 —— 12 支 skills，管的都是「不做不會死、但做了整個工作流才活得下去」的事:
 
 | Skill | 一句話 | R2-D2 對應 |
 |---|---|---|
@@ -18,8 +18,10 @@ MyR2D2 就是這個定位 —— 10 支 skills，管的都是「不做不會死�
 | **mission-log** | 零 token 收割任一天的 session 活動骨架（transcript 本來就在記，只差讀取器） | 飛行記錄器從不休息 |
 | **daily-debrief** | 日結：做了什麼＋reflection，趕在 transcript 30 天蒸發前把價值撈上岸 | 任務歸來的 debrief |
 | **weekly-debrief** | 週結：7 份日結收斂成主線與趨勢 | 看得出補給線問題的是戰役，不是單次任務 |
+| **new-mission** | 開工簡報：先查再問（最多五題）、給計畫、送審、等明確的「做」才動手，順便產出可重用的任務 prompt | R2 投影死星藍圖，反抗軍看完攻擊路線、確認溝渠能飛才升空 |
 | **damage-report** | 收尾自檢五問：寫回報前先對照原始需求跑一輪；建議欄沒有就寫「無」 | 修完飛船自己跑一輪診斷，嗶嗶回報損傷——不等 Luke 問 |
 | **ai-review** | 把產出送給**另一個模型**二審，消化意見後才寫回報；沒有後端就明講「僅自審」 | R2 跟 C-3PO 吵了六集，每次都是對方補上你漏的那半 |
+| **ai-search** | 問一句，回你**附來源、可複查**的即時答案；查不到就說查不到，不拿舊知識硬填 | R2 插進帝國終端機，讀的是當下的站內數據，不是背出來的舊情報 |
 | **token-optimizer** | 多代理派工前的節流鐵則：模型分層、壓縮上報、失敗三次就停 | 能源分配，別讓護盾吃光動力 |
 | **flight-to-calendar** | 航班上 Google Calendar：跨時區不出錯、轉機拆段、夕陽座位 | astromech 本職：導航 |
 
@@ -38,8 +40,10 @@ Claude 的 session 是**失憶的**：對話一關，沒寫進磁碟的東西全
 | save-all | ✅ | ✅（token 統計步自動跳過） | ✅\*（同左） | ✅\*（token 統計步刪掉） | ⚠️ 僅檢查清單 |
 | dropoff / pickup³ | ✅ | ✅ | ✅\* | ✅\* | ❌（無共用磁碟） |
 | mission-log / daily-debrief / weekly-debrief | ✅ | ❌（無本機 transcript） | ❌² | ❌² | ❌² |
+| new-mission | ✅ | ✅（規則類，零工具依賴） | ✅（規則類） | ✅（規則類） | ⚠️ 貼入當開工簡報流程 |
 | damage-report | ✅ | ✅（規則類，零工具依賴） | ✅（規則類） | ✅（規則類） | ⚠️ 貼入當收尾檢查清單 |
 | ai-review | ✅（需二審後端⁴） | ⚠️ 規則可用、腳本要能跑 shell | ⚠️ 同左 | ⚠️ 同左 | ⚠️ 改用 prompts/ 貼進另一個 AI |
+| ai-search | ✅（需搜尋後端⁵） | ⚠️ 規則可用、腳本要能跑 shell | ⚠️ 同左 | ⚠️ 同左 | ⚠️ 用 prompts/＋自帶 browsing |
 | token-optimizer | ✅ | ✅（規則類，無工具依賴） | ⚠️ 原則通用¹ | ⚠️ 原則通用¹ | ⚠️ 原則通用¹ |
 | flight-to-calendar | ✅（需 Calendar connector） | ✅（需 Calendar connector） | ⚠️ 需自備 Calendar MCP（未實測） | ❌ 無 Calendar 工具 | ⚠️ 需自備 Action |
 
@@ -48,6 +52,7 @@ Claude 的 session 是**失憶的**：對話一關，沒寫進磁碟的東西全
 ² 日誌三支的資料來源是 **Claude Code 自家的 transcript**（`~/.claude/projects/`）——skill 格式裝得進其他工具，但那裡沒有這份資料，故標 ❌。
 ³ 「即時門鈴」（推球後直接傳訊喚醒對面 session）為選用增強，僅 Claude Code v2.1.224+ 的 cross-session messaging 生效（官方支援 macOS／Linux；送往 bypass-permissions session 的訊息會先押著等人工核准）；其他工具偵測不到就自動跳過，純檔案交接不受影響。
 ⁴ `ai-review` 需要一個二審後端（預設 Codex CLI，可用 `AI_REVIEW_CMD` 換掉）＋能跑 POSIX shell 的環境。沒有後端／沒登入時回報 `skipped_*` 並**照常回 0**，不會中斷流程；額度或網路類失敗預設回 2，加 `--soft-fail` 可讓它也回 0。腳本刻意不釘死模型（釘了會過期），若後端預設模型不在你的方案內，用 `--model` 指定。腳本已在 macOS 的 `sh`／`dash`／`bash`／`ksh`／`zsh` 實測，Linux 由 CI（ubuntu-latest）每次 push 實跑；**Windows 與免費方案帳號仍未實測**。
+⁵ `ai-search` 與 ai-review 同架構（單檔 POSIX shell、狀態走 stdout、退出碼只分真失敗、自帶一份 43 項行為矩陣隨包出貨並由 CI 每次 push 實跑），差別是它需要一個**會上網搜尋**的後端（預設 Codex CLI 內建的 `web_search`，可用 `AI_SEARCH_CMD` 換掉——但換的後端也得會搜尋，純 LLM 只會拿舊知識填答）。沒有後端／沒登入同樣回 `skipped_*` 並回 0。ChatGPT 消費版本身有 browsing，用 `prompts/ai-search.md` 的簡版 prompt 貼進去即可，毋須本腳本。
 
 - **Gemini CLI／Codex CLI**：安裝與發現層已實測——含 Gemini 的 trusted-folder 關卡（skill 沒出現時，先信任專案資料夾）；執行層未實測。
 - **ChatGPT**：無 CLI／無檔案系統，唯一路徑＝手動貼入（見 adapters）。
@@ -90,13 +95,13 @@ cp -rn MyR2D2/skills/* ~/.claude/skills/
 
 ### 只用網頁版 Chat？免安裝簡版
 
-不用 CLI、不裝任何東西：[prompts/](prompts/) 有可直接貼進對話（或 custom instructions）的簡版 prompt，規則類 skill 適用——`damage-report`（[繁中](prompts/damage-report.md)｜[EN](prompts/damage-report.en.md)；繁中完整版 781 字元、連 ChatGPT Free 都放得下，另有[極簡版](prompts/damage-report.lite.md)供更窄欄位）與 `ai-review`（[繁中](prompts/ai-review.md)｜[EN](prompts/ai-review.en.md)，貼進**另一個** AI 就是跨模型二審）。
+不用 CLI、不裝任何東西：[prompts/](prompts/) 有可直接貼進對話（或 custom instructions）的簡版 prompt——`new-mission`（[繁中](prompts/new-mission.md)｜[EN](prompts/new-mission.en.md)，貼進常駐欄讓它**先問、給計畫、等你點頭才動手**）、`damage-report`（[繁中](prompts/damage-report.md)｜[EN](prompts/damage-report.en.md)；繁中完整版 781 字元、連 ChatGPT Free 都放得下，另有[極簡版](prompts/damage-report.lite.md)供更窄欄位）、`ai-review`（[繁中](prompts/ai-review.md)｜[EN](prompts/ai-review.en.md)，貼進**另一個** AI 就是跨模型二審）與 `ai-search`（[繁中](prompts/ai-search.md)｜[EN](prompts/ai-search.en.md)，貼進**有 browsing 的** AI 就是帶引用的即時查證）。
 
 ### Cowork / claude.ai
 
 先照「手動複製」段 `git clone`（或 GitHub 網頁 **Code → Download ZIP**）取得 repo，再把要用的 skill 資料夾（`skills/<名稱>/`）加進你的 Cowork 專案 skills（或專案目錄的 `.claude/skills/`）。
 
-裝完打 `/save-all`、`/dropoff`、`/pickup`、`/daily-debrief`、`/damage-report`、`/ai-review` 等即可觸發，或用上面任一語言的自然語句。
+裝完打 `/save-all`、`/dropoff`、`/pickup`、`/daily-debrief`、`/new-mission`、`/damage-report`、`/ai-review`、`/ai-search` 等即可觸發，或用上面任一語言的自然語句。
 
 ## 更新
 
@@ -126,8 +131,10 @@ Claude 讀繁中指令、照樣用你的對話語言回覆 —— 英文使用�
 | mission-log | 無 — 收割器為純標準庫 python3 腳本，零 token。附測試（`tests/harvest_test.py`，合成 fixtures、不讀真資料） |
 | daily-debrief | **需一併安裝 mission-log**（收割器在那支裡） |
 | weekly-debrief | **需一併安裝 daily-debrief 與 mission-log**（缺日結會自動補生成） |
+| new-mission | 無（純規則;第 3 步進階節的 `ai-review` 送審是選用交叉引用） |
 | damage-report | 無（純規則;第 5 問提到的 `/dropoff`、進階節的 `ai-review` 都是選用交叉引用） |
 | ai-review | **二審後端**(預設 Codex CLI;`AI_REVIEW_CMD` 可換任何讀 stdin／吐 stdout 的命令)＋POSIX shell。無額外套件依賴:不需 npm 套件、brew formula 或自備 API key。附 41 項回歸測試(`tests/matrix.sh`,不燒額度) |
+| ai-search | **會上網搜尋的後端**(預設 Codex CLI 內建 `web_search`;`AI_SEARCH_CMD` 可換,但換的後端也得會搜尋)＋POSIX shell。無額外套件依賴。附 43 項回歸測試(`tests/matrix.sh`,不燒額度、不連網) |
 | token-optimizer | 無（規則類 skill;Workflow 相關條目需要有 Workflow tool 的環境——Workflow＝Claude Code 的多代理編排功能;§1「進階兜底」僅 Claude Code CLI 生效） |
 | flight-to-calendar | **Google Calendar MCP connector**（硬依賴） |
 
@@ -147,11 +154,11 @@ dropoff/pickup 預設是零依賴的檔案版；如果你有自己的任務系�
 MyR2D2/
 ├── .claude-plugin/                    ← plugin.json + marketplace.json(單一 plugin)
 ├── .github/workflows/                 ← CI(YAML 驗證、守門 grep、行為矩陣、harvest 測試)
-├── skills/                            ← 10 支 skill(繁中本體、雙語觸發)
+├── skills/                            ← 12 支 skill(繁中本體、雙語觸發)
 │   ├── save-all/  ├── dropoff/  ├── pickup/
 │   ├── mission-log/  ├── daily-debrief/  ├── weekly-debrief/
-│   ├── damage-report/  ├── ai-review/  ├── token-optimizer/
-│   └── flight-to-calendar/
+│   ├── new-mission/  ├── damage-report/  ├── ai-review/
+│   ├── ai-search/  ├── token-optimizer/  └── flight-to-calendar/
 ├── prompts/                           ← 免安裝簡版(貼進 Chat 就能用)
 ├── docs/                              ← 測試計畫、外部前提的查證記錄
 ├── adapters/openai/                   ← ChatGPT / Codex 移植包

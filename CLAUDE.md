@@ -110,7 +110,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 ### 行文慣例
 
 - **標點**：敘事／文稿類內容用全形（，。、：「」（））；指令／log／程式導向的 skill（如日誌三支）可用半形。判準＝內容性質；單檔內部一致即可。既有檔不回溯改。反引號一律半形包指令
-- 步驟**預設用 markdown 有序清單**（`1. 2. 3.`）掛在 `## 動作`／`## 步驟` 底下（`dropoff`、`pickup`、`flight-to-calendar` 都是）。只有步驟多到需要拆前置動作、或想讓每步能被單獨引用時，才升級成 H3 依序編號並從 `### 0.` 開始（目前只有 `save-all`）
+- 步驟**預設用 markdown 有序清單**（`1. 2. 3.`）掛在 `## 動作`／`## 步驟` 底下（`dropoff`、`pickup`、`flight-to-calendar` 都是）。只有步驟多到需要拆前置動作、或想讓每步能被單獨引用時，才升級成 H3 依序編號並從 `### 0.` 開始（目前有 `save-all`、`new-mission`）
 - 子項目用圈碼 ①②③④⑤，後續步驟用同一組圈碼回頭對應，不重打項目名
 - emoji 語意固定：⚠️ 風險／🚫 禁止／✅ 完成條件／🔁 重複性規則／📝 紀律／🔴 絕對規則／🔒 資料界線／安全／🤖 彩蛋
 - **「驗證優先於宣告」是全 repo 的主題句**：凡是寫入動作，一律配上具體驗證指令（`wc -l`／`stat`／`grep`／`cat` 回讀）＋明講「別信工具回的『成功』字面」
@@ -126,16 +126,16 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 
 | 位置（錨點） | 行號快照 | 內容 |
 |---|---|---|
-| `README.md` 開頭定位句 | L11 | 「**10 支** skills」計數字串 |
-| `README.md` skill 總表 | L13–24 | 一句話＋R2-D2 對應 |
-| `README.md` `## 這套東西怎麼開發的` | L26–30 | 失憶引言＋自我修正敘事（二審缺陷數、測項數——測試計數一變這裡也要動） |
-| `README.md` `## 相容性矩陣` | L32–56 | 五欄：CLI／Cowork／Gemini／Codex／ChatGPT，含 ✅\* 分級註、trusted-folder、日誌三支資料來源、門鈴註³、ai-review 後端註⁴、未實測範圍註記 |
-| `README.md` `## 安裝` 末句「裝完打…」 | L99 | 逐一點名可觸發的斜線命令 |
-| `README.md` `## 更新` | L101–109 | `npx skills update`／plugin 更新法／Watch Releases 通知 |
-| `README.md` `## 一組 skill、兩種語言習慣` | L111–118 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
-| `README.md` `## 各 skill 的依賴` | L120–134 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
-| `README.md` `## Repo 結構` tree | L144–160 | skill 目錄名＋「10 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
-| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 178 行**，改完要複驗仍對齊） |
+| `README.md` 開頭定位句 | L11 | 「**12 支** skills」計數字串 |
+| `README.md` skill 總表 | L13–26 | 一句話＋R2-D2 對應 |
+| `README.md` `## 這套東西怎麼開發的` | L28–32 | 失憶引言＋自我修正敘事（二審缺陷數、測項數——測試計數一變這裡也要動） |
+| `README.md` `## 相容性矩陣` | L34–61 | 五欄：CLI／Cowork／Gemini／Codex／ChatGPT，含 ✅\* 分級註、trusted-folder、日誌三支資料來源、門鈴註³、ai-review 後端註⁴、未實測範圍註記 |
+| `README.md` `## 安裝` 末句「裝完打…」 | L104 | 逐一點名可觸發的斜線命令 |
+| `README.md` `## 更新` | L106–114 | `npx skills update`／plugin 更新法／Watch Releases 通知 |
+| `README.md` `## 一組 skill、兩種語言習慣` | L116–123 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
+| `README.md` `## 各 skill 的依賴` | L125–141 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
+| `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「12 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
+| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 185 行**，改完要複驗仍對齊） |
 | `prompts/<skill>.md`＋`.en.md` | — | **免安裝簡版**（規則類 skill 適用，damage-report 首例）：skill 的五問／規則本體一改，簡版兩檔要同步改寫，別讓簡版變舊版 |
 | `docs/TEST_PLAN.md` C 段快照 | 文末表格 | 相容性結論快照——README 矩陣評級一動，這裡要同步（反之亦然，見 TEST_PLAN CROSS-07） |
 | `docs/TEST_PLAN.md` D 段 | C 段之前 | 交接門鈴測項 D-01～06——dropoff/pickup 的門鈴行為一改要同步 |

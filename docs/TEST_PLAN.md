@@ -22,7 +22,7 @@
 > import yaml, glob, re, sys
 > fails = 0
 > files = sorted(glob.glob('skills/*/SKILL.md'))
-> assert len(files) == 10, f'skill 數 {len(files)} != 10'
+> assert len(files) == 12, f'skill 數 {len(files)} != 12'
 > for f in files:
 >     m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
 >     try: yaml.safe_load(m.group(1))
@@ -36,6 +36,7 @@
 > # 守門 grep：照 CLAUDE.md 鐵則 1 那條跑（CI 版含白名單，見 ci.yml 第 3 步；不在此重抄一份）
 > test "$(wc -l < README.md)" -eq "$(wc -l < README.en.md)"
 > for s in sh dash bash ksh zsh; do SH=$s sh skills/ai-review/tests/matrix.sh; done
+> for s in sh dash bash ksh zsh; do SH=$s sh skills/ai-search/tests/matrix.sh; done
 > python3 skills/mission-log/tests/harvest_test.py
 > LC_ALL=C python3 skills/mission-log/tests/harvest_test.py
 > ```
@@ -52,7 +53,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 "
 ```
 
-**通過**：全部 skill（v0.5.0 起為 10 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
+**通過**：全部 skill（現為 12 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
 ⚠️ 驗證器自己也要驗：跑一次**故意壞掉的 YAML**（如 `description: bad: colon`）確認它真的會 FAIL，否則你可能在看一個永遠說 OK 的空轉腳本。
 
 ### REG-02 🟢 agentskills.io 官方 validator
@@ -61,7 +62,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 ```
 
-**通過**：全數（現為 10 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
+**通過**：全數（現為 12 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
 
 ### REG-03 🟢 本地安裝煙霧測試
 
@@ -69,7 +70,7 @@ for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 cd "$(mktemp -d)" && git init -q . && npx --yes skills@latest add <repo根目錄> -y
 ```
 
-**通過**：回報 `Installed 10 skills`（與 repo 現有支數一致）、0 個 Skipped。
+**通過**：回報 `Installed 12 skills`（與 repo 現有支數一致）、0 個 Skipped。
 
 ### REG-04 🟢 公開內容守門
 
@@ -352,6 +353,57 @@ README 與 SKILL.md 均未作此宣稱。要宣稱前先補這兩格。
 
 ---
 
+## F. ai-search（帶引用即時查證）
+
+> 腳本＝`skills/ai-search/scripts/ai-search.sh`（單檔 POSIX shell，與 ai-review 同架構）。
+> 設計原則相同：**狀態走 stdout、退出碼只分真失敗**，沒裝後端是預期降級、不得中斷上層。
+> 🔴 誠實註記：ai-search **尚未**經過 ai-review 那樣的多輪跨「模型家族」二審 —— 但已過一輪
+> 三視角對抗式自審（shell 正確性／去識別化／連動完整性，抓到並修掉 2 個真缺陷：檔名控制字元
+> 注入、`-- -` stdin 邊界）。真實後端 ok 路徑已**單次**實測（F-02／F-04，2026-08-24），尚未逐項回歸。
+
+### F-01 🟢 多 shell 語法與行為矩陣
+
+```bash
+for s in /bin/sh /bin/dash /bin/bash /bin/ksh /bin/zsh; do $s -n skills/ai-search/scripts/ai-search.sh; done
+for s in /bin/sh /bin/dash /bin/bash /bin/ksh /bin/zsh; do SH=$s sh skills/ai-search/tests/matrix.sh; done
+```
+
+行為矩陣隨 skill 出貨＝`skills/ai-search/tests/matrix.sh`（43 項，stub 後端**不燒額度、不連網**、
+產出寫暫存區、開頭自動 `unset` 外部 `AI_SEARCH_*` 變數以隔離環境）。涵蓋：後端錯誤分類、
+`--strict`／`--soft-fail`、可插拔後端、`set -e`＋`$(…)` 呼叫鏈（含負對照：真失敗必須中斷上層）、
+問題輸入多形式（位置參數接句／stdin `-`／`--` 之後當文字）、分類器不把真失敗吞成 skipped、
+落檔不覆蓋／600／防 symlink、含冒號引號的問題 frontmatter 仍是合法 YAML、非 UTF-8 locale 長中文落檔。
+**通過**：語法全過；每個 shell 皆 43/43（缺 `python3`+`pyyaml` 時 42 過 1 略過）。
+狀態（2026-08-24）：✅ 已於 macOS 27 五 shell 實測 42 過 1 略（本機無 pyyaml；frontmatter 另以
+`/usr/bin/python3`+yaml 6.0.3 獨立驗過為合法）；Linux 由 CI（ubuntu-latest）每次 push 實跑。
+
+### F-02 🟡 真實後端 ok 路徑
+
+```bash
+skills/ai-search/scripts/ai-search.sh "某個需要查證現況的問題"
+```
+
+**通過**：回 `AI_SEARCH_STATUS: ok`、退出碼 0、答案結論先行且附**可點的來源連結**（不是錯誤頁），
+內容反映當前網路資訊而非訓練知識填答。
+狀態（2026-08-24）：✅ **已單次實測**（Codex CLI，真實 `web_search` 後端）——問「今天日期＋Codex CLI
+最新穩定版」，回 `AI_SEARCH_STATUS: ok`／rc 0、結論先行、附 3 個來源連結（官方 GitHub release／npm／
+timeanddate）並自行分級官方vs二手，且答出當日 release `0.149.1`（新過本機安裝版＝確實查了即時網路、
+非訓練知識）；預設落檔的 frontmatter 正確（含 `'` 的問題在 YAML 內跳脫無誤）。尚未逐項回歸。
+
+### F-03 ✋ 降級不中斷上層
+
+在 `set -e` 的 wrapper 內、輸出被 `$(…)` 捕捉時，對「沒有後端」的環境呼叫。
+**通過**：wrapper 繼續往下跑、退出碼 0、狀態 `skipped_not_installed`；`--strict` 反向確認回 3。
+狀態（2026-08-24）：✅ 已由矩陣 B／D 段涵蓋（stub 實測，5 shell）。
+
+### F-04 🟡 web_search 旗標實際生效
+
+真實後端下，確認腳本送的 `-c tools.web_search=true` 真的讓後端上網（而非拿舊知識答）。
+**通過**：答案含**當下**才查得到的事實與來源連結。
+狀態（2026-08-24）：✅ 已實測——同一次 F-02 run 即證 `-c tools.web_search=true` 真的讓後端上網（答案含當日 release 版本與可點來源，非舊知識填答）。
+
+---
+
 ## C. 相容性結論快照（安裝層 2026-08-21 重驗；發現層仍為 2026-07-30 快照，過期重驗）
 
 | 工具 | 安裝層 | 發現層 | 執行層 |
@@ -363,3 +415,7 @@ README 與 SKILL.md 均未作此宣稱。要宣稱前先補這兩格。
 | Cursor／Copilot 等 | ❓ `npx skills` 支援但未實測 | ❓ | ❓ |
 
 註（2026-08-09）：v0.4.0 的交接門鈴（D 段）為 Claude Code 限定的選用增強，各工具評級不因此變動——非 Claude Code 環境自動降級純檔案交接（見 README 矩陣註³）。
+
+註（2026-08-24）：新增 ai-search（第 11 支）。當日重跑 REG-03 通用安裝煙霧＝**Installed 11 skills**（`npx skills add` 同時裝進 Claude Code／Codex／Gemini CLI／Copilot 等目標，ai-search 含 `tests/` 一起裝出）。表內各 CLI 版本的 **10/10 是 ai-search 之前的逐一 `--agent` 快照**（2026-08-21），per-agent 11 支的 CROSS-01 重驗待補；評級不因新增一支而變動。
+
+註（2026-08-28）：新增 new-mission（第 12 支，純規則零依賴，比照 damage-report 無專屬測試段；prompts/ 另有免安裝簡版兩檔）。當日重跑 REG-03 通用安裝煙霧＝**Installed 12 skills**、new-mission 在列、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 重驗仍待補（同上註）；評級不因新增而變動。
