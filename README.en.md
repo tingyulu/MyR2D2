@@ -18,7 +18,7 @@ That's MyR2D2's job description — 12 skills covering things that "won't kill y
 | **mission-log** | Zero-token harvest of any day's session activity (the transcripts were always recording — you just need a reader) | The flight recorder never sleeps |
 | **daily-debrief** | Daily wrap-up: what happened + reflection, landed before transcripts evaporate (30-day retention) | The post-mission debrief |
 | **weekly-debrief** | Weekly wrap-up: 7 dailies condensed into storylines and trends | Campaigns reveal supply-line problems; single sorties don't |
-| **new-mission** | Kickoff brief: look first, ask at most five questions, draft the plan, review it, wait for an explicit "go" — and mint a reusable task prompt on the way | R2 projects the Death Star plans; the squadron flies the trench only after the briefing |
+| **new-mission** | Kickoff brief: look first, ask at most five questions, draft the plan, review it, wait for an explicit "go" — mint a reusable task prompt on the way, and close with a wrap-up report against the plan | R2 projects the Death Star plans; the squadron flies the trench only after the briefing |
 | **damage-report** | Five wrap-up questions run against the original ask before you report; the suggestions field says "none" when there's nothing real | Ship repaired, R2 runs its own diagnostics and beeps the damage report — without waiting for Luke to ask |
 | **ai-review** | Send the work to **another model** for a second opinion, digest it, then write the report; says "self-review only" when no backend is there | R2 and C-3PO bicker for six films — each covering the other's blind half |
 | **ai-search** | Ask once, get a **cited, checkable** live answer; says "not found" instead of filling from stale training data | R2 jacks into an Imperial terminal — reading live station data, not stale intel from memory |
@@ -95,7 +95,7 @@ cp -rn MyR2D2/skills/* ~/.claude/skills/
 
 ### Chat-only? No-install lite prompts
 
-No CLI, nothing to install: [prompts/](prompts/) has paste-ready lite versions — `new-mission` ([zh-TW](prompts/new-mission.md) | [EN](prompts/new-mission.en.md) — paste into persistent instructions so it **asks, plans, and waits for your go before acting**), `damage-report` ([zh-TW](prompts/damage-report.md) | [EN](prompts/damage-report.en.md); a 1,260-char [minimal version](prompts/damage-report.lite.en.md) fits narrow fields like ChatGPT Free), `ai-review` ([zh-TW](prompts/ai-review.md) | [EN](prompts/ai-review.en.md) — paste into **another** AI for a cross-model review) and `ai-search` ([zh-TW](prompts/ai-search.md) | [EN](prompts/ai-search.en.md) — paste into an AI **with browsing** for cited, real-time verification).
+No CLI, nothing to install: [prompts/](prompts/) has paste-ready lite versions — `new-mission` ([zh-TW](prompts/new-mission.md) | [EN](prompts/new-mission.en.md) — paste into persistent instructions so it **asks, plans, waits for your go — then closes with a wrap-up report**), `damage-report` ([zh-TW](prompts/damage-report.md) | [EN](prompts/damage-report.en.md); a 1,260-char [minimal version](prompts/damage-report.lite.en.md) fits narrow fields like ChatGPT Free), `ai-review` ([zh-TW](prompts/ai-review.md) | [EN](prompts/ai-review.en.md) — paste into **another** AI for a cross-model review) and `ai-search` ([zh-TW](prompts/ai-search.md) | [EN](prompts/ai-search.en.md) — paste into an AI **with browsing** for cited, real-time verification).
 
 ### Cowork / claude.ai
 

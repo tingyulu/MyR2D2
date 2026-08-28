@@ -18,7 +18,7 @@ MyR2D2 就是這個定位 —— 12 支 skills，管的都是「不做不會死�
 | **mission-log** | 零 token 收割任一天的 session 活動骨架（transcript 本來就在記，只差讀取器） | 飛行記錄器從不休息 |
 | **daily-debrief** | 日結：做了什麼＋reflection，趕在 transcript 30 天蒸發前把價值撈上岸 | 任務歸來的 debrief |
 | **weekly-debrief** | 週結：7 份日結收斂成主線與趨勢 | 看得出補給線問題的是戰役，不是單次任務 |
-| **new-mission** | 開工簡報：先查再問（最多五題）、給計畫、送審、等明確的「做」才動手，順便產出可重用的任務 prompt | R2 投影死星藍圖，反抗軍看完攻擊路線、確認溝渠能飛才升空 |
+| **new-mission** | 開工簡報：先查再問（最多五題）、給計畫、送審、等明確的「做」才動手，順便產出可重用的任務 prompt；執行結束交對照計畫的收尾報告 | R2 投影死星藍圖，反抗軍看完攻擊路線、確認溝渠能飛才升空 |
 | **damage-report** | 收尾自檢五問：寫回報前先對照原始需求跑一輪；建議欄沒有就寫「無」 | 修完飛船自己跑一輪診斷，嗶嗶回報損傷——不等 Luke 問 |
 | **ai-review** | 把產出送給**另一個模型**二審，消化意見後才寫回報；沒有後端就明講「僅自審」 | R2 跟 C-3PO 吵了六集，每次都是對方補上你漏的那半 |
 | **ai-search** | 問一句，回你**附來源、可複查**的即時答案；查不到就說查不到，不拿舊知識硬填 | R2 插進帝國終端機，讀的是當下的站內數據，不是背出來的舊情報 |
@@ -95,7 +95,7 @@ cp -rn MyR2D2/skills/* ~/.claude/skills/
 
 ### 只用網頁版 Chat？免安裝簡版
 
-不用 CLI、不裝任何東西：[prompts/](prompts/) 有可直接貼進對話（或 custom instructions）的簡版 prompt——`new-mission`（[繁中](prompts/new-mission.md)｜[EN](prompts/new-mission.en.md)，貼進常駐欄讓它**先問、給計畫、等你點頭才動手**）、`damage-report`（[繁中](prompts/damage-report.md)｜[EN](prompts/damage-report.en.md)；繁中完整版 781 字元、連 ChatGPT Free 都放得下，另有[極簡版](prompts/damage-report.lite.md)供更窄欄位）、`ai-review`（[繁中](prompts/ai-review.md)｜[EN](prompts/ai-review.en.md)，貼進**另一個** AI 就是跨模型二審）與 `ai-search`（[繁中](prompts/ai-search.md)｜[EN](prompts/ai-search.en.md)，貼進**有 browsing 的** AI 就是帶引用的即時查證）。
+不用 CLI、不裝任何東西：[prompts/](prompts/) 有可直接貼進對話（或 custom instructions）的簡版 prompt——`new-mission`（[繁中](prompts/new-mission.md)｜[EN](prompts/new-mission.en.md)，貼進常駐欄讓它**先問、給計畫、等你點頭才動手、做完交收尾報告**）、`damage-report`（[繁中](prompts/damage-report.md)｜[EN](prompts/damage-report.en.md)；繁中完整版 781 字元、連 ChatGPT Free 都放得下，另有[極簡版](prompts/damage-report.lite.md)供更窄欄位）、`ai-review`（[繁中](prompts/ai-review.md)｜[EN](prompts/ai-review.en.md)，貼進**另一個** AI 就是跨模型二審）與 `ai-search`（[繁中](prompts/ai-search.md)｜[EN](prompts/ai-search.en.md)，貼進**有 browsing 的** AI 就是帶引用的即時查證）。
 
 ### Cowork / claude.ai
 
