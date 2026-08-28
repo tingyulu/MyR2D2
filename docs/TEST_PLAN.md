@@ -93,7 +93,7 @@ done
 ```
 
 **通過**：每個 agent 都回報 Installed 支數=repo 現有支數、0 Skipped。
-狀態（2026-07-30）：gemini-cli／codex 已實測通過；cursor／github-copilot 未實測。
+狀態（2026-08-29）：gemini-cli／codex 重驗通過——各自乾淨目錄逐一 `--agent` 裝，皆 Installed 12、0 Skipped、磁碟實數 12（skills CLI 1.5.23；兩者安裝目標均為統一的 `.agents/skills/`）。cursor／github-copilot 仍未實測。
 
 ### CROSS-02 🟡 Gemini CLI 發現層（trusted-folder 關卡）
 
@@ -404,13 +404,13 @@ timeanddate）並自行分級官方vs二手，且答出當日 release `0.149.1`�
 
 ---
 
-## C. 相容性結論快照（安裝層 2026-08-21 重驗；發現層仍為 2026-07-30 快照，過期重驗）
+## C. 相容性結論快照（安裝層 2026-08-29 重驗；發現層仍為 2026-07-30 快照，過期重驗）
 
 | 工具 | 安裝層 | 發現層 | 執行層 |
 |---|---|---|---|
 | Claude Code CLI | ✅ 實測（npx／plugin 雙路徑） | ✅ | ✅（日常使用） |
-| Gemini CLI 0.40.0 | ✅ 實測 10/10（2026-08-21） | ⚠️ 需先信任資料夾（無聲關卡） | ❓ 未測 |
-| Codex CLI 0.148.0 | ✅ 實測 10/10（2026-08-21） | ✅ 實測（原生注入 prompt；於 0.145.0 實測） | ❓ 未測 |
+| Gemini CLI | ✅ 實測 12/12（2026-08-29 逐一 `--agent`） | ⚠️ 需先信任資料夾（無聲關卡；0.40.0 實測） | ❓ 未測 |
+| Codex CLI | ✅ 實測 12/12（2026-08-29 逐一 `--agent`） | ✅ 實測（原生注入 prompt；於 0.145.0 實測） | ❓ 未測 |
 | ChatGPT 消費版 | ❌ 無安裝路徑（產品限制） | ❌ 無 skill 概念 | 僅手動貼入，網頁端人工驗 |
 | Cursor／Copilot 等 | ❓ `npx skills` 支援但未實測 | ❓ | ❓ |
 
@@ -419,3 +419,5 @@ timeanddate）並自行分級官方vs二手，且答出當日 release `0.149.1`�
 註（2026-08-24）：新增 ai-search（第 11 支）。當日重跑 REG-03 通用安裝煙霧＝**Installed 11 skills**（`npx skills add` 同時裝進 Claude Code／Codex／Gemini CLI／Copilot 等目標，ai-search 含 `tests/` 一起裝出）。表內各 CLI 版本的 **10/10 是 ai-search 之前的逐一 `--agent` 快照**（2026-08-21），per-agent 11 支的 CROSS-01 重驗待補；評級不因新增一支而變動。
 
 註（2026-08-28）：新增 new-mission（第 12 支，純規則零依賴，比照 damage-report 無專屬測試段；prompts/ 另有免安裝簡版兩檔）。當日重跑 REG-03 通用安裝煙霧＝**Installed 12 skills**、new-mission 在列、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 重驗仍待補（同上註）；評級不因新增而變動。
+
+註（2026-08-29）：**CROSS-01 per-agent 重驗完成，上兩註的「待補」關閉**——gemini-cli／codex 各自乾淨目錄逐一 `--agent` 裝（v0.7.1 working tree），皆 Installed 12、0 Skipped、磁碟實數 12；skills CLI 1.5.23。安裝目標兩者均為統一的 `.agents/skills/`（與 REG-03 通用煙霧同路徑）——安裝層測的是 `npx skills` 安裝器行為，與目標 CLI 自身版本無關，故表內安裝層欄不再綁 CLI 版號；發現層各 CLI 版號快照維持原註。
