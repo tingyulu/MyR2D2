@@ -51,8 +51,8 @@ Claude 的 session 是**失憶的**：對話一關，沒寫進磁碟的東西全
 ¹ 五鐵則通用、模型名自行對換；§1「進階兜底」（settings.json／env）僅 Claude Code 生效，其他工具跳過。
 ² 日誌三支的資料來源是 **Claude Code 自家的 transcript**（`~/.claude/projects/`）——skill 格式裝得進其他工具，但那裡沒有這份資料，故標 ❌。
 ³ 「即時門鈴」（推球後直接傳訊喚醒對面 session）為選用增強，僅 Claude Code v2.1.224+ 的 cross-session messaging 生效（官方支援 macOS／Linux；送往 bypass-permissions session 的訊息會先押著等人工核准）；其他工具偵測不到就自動跳過，純檔案交接不受影響。
-⁴ `ai-review` 需要一個二審後端（預設 Codex CLI，可用 `AI_REVIEW_CMD` 換掉）＋能跑 POSIX shell 的環境。沒有後端／沒登入時回報 `skipped_*` 並**照常回 0**，不會中斷流程；額度或網路類失敗預設回 2，加 `--soft-fail` 可讓它也回 0。腳本刻意不釘死模型（釘了會過期），若後端預設模型不在你的方案內，用 `--model` 指定。腳本已在 macOS 的 `sh`／`dash`／`bash`／`ksh`／`zsh` 實測，Linux 由 CI（ubuntu-latest）每次 push 實跑；**Windows 與免費方案帳號仍未實測**。
-⁵ `ai-search` 與 ai-review 同架構（單檔 POSIX shell、狀態走 stdout、退出碼只分真失敗、自帶一份 43 項行為矩陣隨包出貨並由 CI 每次 push 實跑），差別是它需要一個**會上網搜尋**的後端（預設 Codex CLI 內建的 `web_search`，可用 `AI_SEARCH_CMD` 換掉——但換的後端也得會搜尋，純 LLM 只會拿舊知識填答）。沒有後端／沒登入同樣回 `skipped_*` 並回 0。ChatGPT 消費版本身有 browsing，用 `prompts/ai-search.md` 的簡版 prompt 貼進去即可，毋須本腳本。
+⁴ `ai-review` 需要一個二審後端（預設 Codex CLI，可用 `AI_REVIEW_CMD` 換掉）＋能跑 POSIX shell 的環境。沒有後端／沒登入時回報 `skipped_*` 並**照常回 0**，不會中斷流程（自動化要分辨「略過」與「成功」，解析 stdout 末行的 `AI_REVIEW_STATUS:`）；額度或網路類失敗預設回 2，加 `--soft-fail` 可讓它也回 0。腳本刻意不釘死模型（釘了會過期），若後端預設模型不在你的方案內，用 `--model` 指定。腳本已在 macOS 的 `sh`／`dash`／`bash`／`ksh`／`zsh` 實測，Linux 由 CI（ubuntu-latest）每次 push 實跑；**Windows 與免費方案帳號仍未實測**。
+⁵ `ai-search` 與 ai-review 同架構（單檔 POSIX shell、狀態走 stdout、退出碼只分真失敗、自帶一份 43 項行為矩陣隨包出貨並由 CI 每次 push 實跑），差別是它需要一個**會上網搜尋**的後端（預設 Codex CLI 內建的 `web_search`，可用 `AI_SEARCH_CMD` 換掉——但換的後端也得會搜尋，純 LLM 只會拿舊知識填答）。沒有後端／沒登入同樣回 `skipped_*` 並回 0——自動化只看退出碼會把「本次沒查證」當成功，要分辨就解析 stdout 末行的 `AI_SEARCH_STATUS:`。ChatGPT 消費版本身有 browsing，用 `prompts/ai-search.md` 的簡版 prompt 貼進去即可，毋須本腳本。
 
 - **Gemini CLI／Codex CLI**：安裝與發現層已實測——含 Gemini 的 trusted-folder 關卡（skill 沒出現時，先信任專案資料夾）；執行層未實測。
 - **ChatGPT**：無 CLI／無檔案系統，唯一路徑＝手動貼入（見 adapters）。
