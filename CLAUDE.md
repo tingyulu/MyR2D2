@@ -135,7 +135,7 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 | `README.md` `## 一組 skill、兩種語言習慣` | L116–123 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
 | `README.md` `## 各 skill 的依賴` | L125–141 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
 | `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「12 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
-| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 185 行**，改完要複驗仍對齊） |
+| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 186 行**，改完要複驗仍對齊） |
 | `prompts/<skill>.md`＋`.en.md` | — | **免安裝簡版**（規則類 skill 適用，damage-report 首例）：skill 的五問／規則本體一改，簡版兩檔要同步改寫，別讓簡版變舊版 |
 | `docs/TEST_PLAN.md` C 段快照 | 文末表格 | 相容性結論快照——README 矩陣評級一動，這裡要同步（反之亦然，見 TEST_PLAN CROSS-07） |
 | `docs/TEST_PLAN.md` D 段 | C 段之前 | 交接門鈴測項 D-01～06——dropoff/pickup 的門鈴行為一改要同步 |
