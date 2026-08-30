@@ -161,6 +161,7 @@ MyR2D2/
 │   ├── ai-search/  ├── token-optimizer/  └── flight-to-calendar/
 ├── prompts/                           ← 免安裝簡版(貼進 Chat 就能用)
 ├── docs/                              ← 測試計畫、外部前提的查證記錄
+│   └── cheatsheet.md                  ← 12 支速查小抄(附 4:5 圖卡 png)
 ├── adapters/openai/                   ← ChatGPT / Codex 移植包
 ├── README.md                          ← 本頁(中文為主)
 └── README.en.md                       ← English

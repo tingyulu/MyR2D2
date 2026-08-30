@@ -161,6 +161,7 @@ MyR2D2/
 │   ├── ai-search/  ├── token-optimizer/  └── flight-to-calendar/
 ├── prompts/                           ← no-install lite prompts (paste into any chat)
 ├── docs/                              ← test plan + verification notes for external claims
+│   └── cheatsheet.md                  ← 12-skill cheat sheet (with 4:5 png card)
 ├── adapters/openai/                   ← ChatGPT / Codex porting kit
 ├── README.md                          ← zh-TW (primary)
 └── README.en.md                       ← this page
