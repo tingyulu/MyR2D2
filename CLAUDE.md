@@ -137,6 +137,7 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 | `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「12 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
 | `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 186 行**，改完要複驗仍對齊） |
 | `prompts/<skill>.md`＋`.en.md` | — | **免安裝簡版**（規則類 skill 適用，damage-report 首例）：skill 的五問／規則本體一改，簡版兩檔要同步改寫，別讓簡版變舊版 |
+| `docs/cheatsheet.md`＋`cheatsheet.en.md`＋兩張 png | — | **速查小抄**：skill 數、一句話定位、觸發詞節選。新增／刪除 skill、改一句話或觸發詞，兩個語言的 md 與圖卡都要跟著改；英文圖卡有原始檔 `cheatsheet.en.html`（重截指令寫在檔頭註解），中文圖卡目前沒有原始檔 |
 | `docs/TEST_PLAN.md` C 段快照 | 文末表格 | 相容性結論快照——README 矩陣評級一動，這裡要同步（反之亦然，見 TEST_PLAN CROSS-07） |
 | `docs/TEST_PLAN.md` D 段 | C 段之前 | 交接門鈴測項 D-01～06——dropoff/pickup 的門鈴行為一改要同步 |
 | `docs/TEST_PLAN.md` E 段＋`docs/AI_REVIEW_SOURCES.md` | D 段之後 | ai-review 測項 E-01～09 與**外部前提的查證原文**（方案涵蓋、安裝／登入指令）——腳本行為或引導文字一改要同步；查證超過兩週視為過期 |

@@ -34,4 +34,4 @@
 | `token-optimizer` | 呼叫 Agent／Workflow 派工前必讀的節流規則（自動觸發型） | 「省 token」「配額」 | "save tokens", "don't burn my limit" |
 | `flight-to-calendar` | 把已訂航班加進 Google Calendar，跨時區正確、傍晚／清晨航段標日落日出座位 | 「把航班加到行事曆」 | "add my flights to the calendar" |
 
-> 🤖 同內容的 4:5 圖卡：[cheatsheet.png](cheatsheet.png)（存進手機相簿隨時翻）。
+> 🤖 同內容的 4:5 圖卡：[cheatsheet.png](cheatsheet.png)（存進手機相簿隨時翻）。English version: [cheatsheet.en.md](cheatsheet.en.md)。

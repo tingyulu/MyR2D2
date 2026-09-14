@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MyR2D2 Cheat Sheet (EN)</title>
+<!-- Source of cheatsheet.en.png (2160×2700). Re-render with headless Chrome at a 1600×2000 viewport, device scale factor 1.35:
+     chrome --headless --hide-scrollbars --user-data-dir=<temp dir> --window-size=1600,2000 --force-device-scale-factor=1.35 --screenshot=cheatsheet.en.png file://<absolute path>/cheatsheet.en.html
+     Headless Chrome may not exit after the screenshot; stop it (only the one using your temp dir) once the PNG appears. -->
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1600px; height: 2000px; box-sizing: border-box;
+    background: #0b1120; color: #e5e7eb;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "PingFang TC", sans-serif;
+    padding: 70px 78px 0;
+    position: relative; overflow: hidden;
+  }
+  header { display: flex; align-items: baseline; gap: 26px; position: relative; }
+  h1 { margin: 0; font-size: 82px; font-weight: 800; letter-spacing: -1px; color: #f8fafc; }
+  .sub { font-size: 33px; color: #93a4c3; }
+  .bot { position: absolute; right: 0; top: 6px; font-size: 58px; }
+  .rule { height: 5px; background: #3b82f6; margin: 28px 0 2px; border-radius: 3px; }
+  h2 { margin: 34px 0 2px; font-size: 38px; font-weight: 800; color: #60a5fa; letter-spacing: 1px; }
+  .row { display: grid; grid-template-columns: 395px 1fr; padding: 14px 0 15px; border-bottom: 1px solid #1c2638; }
+  .row:last-child { border-bottom: none; }
+  .name { font-family: Menlo, "SF Mono", monospace; font-weight: 700; font-size: 38px; color: #fbbf24; line-height: 1.18; }
+  .desc { font-size: 34px; line-height: 1.3; color: #e8edf5; }
+  .trig { font-size: 28px; color: #86efac; margin-top: 4px; }
+  .trig .dot { color: #5b6b86; padding: 0 8px; }
+  footer { position: absolute; left: 0; right: 0; bottom: 46px; text-align: center; font-size: 27px; color: #64748b; }
+  footer .dot { padding: 0 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>MyR2D2 Cheat Sheet</h1>
+    <span class="sub">12 skills · when to use · what to say</span>
+    <span class="bot">🤖</span>
+  </header>
+  <div class="rule"></div>
+
+  <h2>Wrap-up &amp; Handoff</h2>
+  <div class="row"><div class="name">/save-all</div><div><div class="desc">Before a reboot: save what's only in the chat, and verify it</div><div class="trig">"save-all"<span class="dot">·</span>"about to reboot"<span class="dot">·</span>"wrapping up for today"</div></div></div>
+  <div class="row"><div class="name">/dropoff</div><div><div class="desc">Hand a task and its full context to another session</div><div class="trig">"hand this off to X"<span class="dot">·</span>"pass this to the next session"</div></div></div>
+  <div class="row"><div class="name">/pickup</div><div><div class="desc">Read handoff cards and take over; run it at session start</div><div class="trig">"pickup"<span class="dot">·</span>"anything handed off to me?"</div></div></div>
+
+  <h2>Work Journal</h2>
+  <div class="row"><div class="name">/mission-log</div><div><div class="desc">Zero-token harvest of a day's session activity (read-only)</div><div class="trig">"what did I work on today"<span class="dot">·</span>"mission log"</div></div></div>
+  <div class="row"><div class="name">/daily-debrief</div><div><div class="desc">Turn that harvest into a daily report (needs mission-log)</div><div class="trig">"daily debrief"<span class="dot">·</span>"write up my day"</div></div></div>
+  <div class="row"><div class="name">/weekly-debrief</div><div><div class="desc">Roll 7 dailies into a weekly (needs the two above)</div><div class="trig">"weekly debrief"<span class="dot">·</span>"wrap up my week"</div></div></div>
+
+  <h2>Kickoff &amp; Quality</h2>
+  <div class="row"><div class="name">/new-mission</div><div><div class="desc">3+ steps or hard to undo: ask → plan → your go → report</div><div class="trig">"mission brief"<span class="dot">·</span>"plan before doing"</div></div></div>
+  <div class="row"><div class="name">/damage-report</div><div><div class="desc">Five self-review questions before reporting back</div><div class="trig">"damage report"<span class="dot">·</span>"self-review"</div></div></div>
+  <div class="row"><div class="name">/ai-review</div><div><div class="desc">Get a second opinion from another model, then digest it</div><div class="trig">"second opinion"<span class="dot">·</span>"cross-model review"</div></div></div>
+  <div class="row"><div class="name">/ai-search</div><div><div class="desc">Live web answers with citations; says so when not found</div><div class="trig">"fact-check this"<span class="dot">·</span>"what is the latest"</div></div></div>
+
+  <h2>Budget &amp; Life</h2>
+  <div class="row"><div class="name">token-optimizer</div><div><div class="desc">Budget rules before dispatching agents (auto-triggers)</div><div class="trig">"save tokens"<span class="dot">·</span>"don't burn my limit"</div></div></div>
+  <div class="row"><div class="name">flight-to-<br>calendar</div><div><div class="desc">Flights → Google Calendar: right time zones, sunset seats</div><div class="trig">"add my flights to the calendar"</div></div></div>
+
+  <footer>github.com/tingyulu/MyR2D2<span class="dot">·</span>Say it in English or 中文<span class="dot">·</span>Install &amp; compatibility in the README</footer>
+</body>
+</html>
