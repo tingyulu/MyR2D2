@@ -2759,9 +2759,16 @@ def _owner_project(scope: Scope) -> str:
 def _too_young(scope, path, win):
     """檔案比 usage 窗還新＝窗內零引用不構成訊號；回 (是否降級, 檔齡天數)。"""
     st = safe_stat(scope, path)
-    birth = getattr(st, "st_birthtime", None) if st is not None else None
+    if st is None:
+        return False, None
+    birth = getattr(st, "st_birthtime", None)
     if birth is None:
-        return False, None  # 拿不到 birthtime 就不降級（維持 human）
+        # 沒有 birthtime 的平台／檔案系統（多數 Linux）：用 mtime 與 ctime 較早者估建立時間——
+        # ctime 不可能早於建立、mtime 可能被回溯，取小的最接近；拿不到就不降級（維持 human）
+        try:
+            birth = min(st.st_mtime, st.st_ctime)
+        except AttributeError:
+            return False, None
     try:
         age = (now() - datetime.fromtimestamp(birth)).days
     except (ValueError, OverflowError, OSError):

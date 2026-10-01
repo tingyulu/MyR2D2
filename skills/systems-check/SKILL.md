@@ -280,6 +280,7 @@ finders 按**檔案分組**派，不是按桶：把 `rules_by_topic/*.md` 依檔
 - 輸出遮罩會把電話號碼換掉，但只認 E.164 國際格式（`+` 開頭 8〜15 碼）與一組在地範例（台灣門號 `09` 開頭十碼）；其他在地寫法不會被遮。
 - runner／排程偵測只支援 macOS launchd（`~/Library/LaunchAgents`）；其他平台會在 `scan_meta.json` 的 `notes` 記一筆「本平台略過」，不算 incomplete。
 - 走訪時固定跳過 `_retired`、`_backup`、`.git`、`node_modules`、`__pycache__` 與 `.bak*` 開頭的目錄；放在這些目錄裡的規則不會被掃到。
+- 「太新所以不可判」的檔齡用檔案 birthtime；平台拿不到 birthtime（多數 Linux 檔案系統）就用 mtime 與 ctime 較早者估，可能把被回溯 mtime 的檔算得比實際老。
 - 「索引單行過長」只看專案 memory 的 `MEMORY.md`（每個 session 開場載入的索引），門檻 300 UTF-16 單位；skill description 門檻 400 單位。這兩個數字是常駐成本的經驗值，不是官方上限。
 - 憑證檔只認檔型（`token.json`、`credentials.json`、`.env`、`*.pem`、`*.key`…）；程式碼檔會被讀內容做 secret 掃描，但不當憑證檔。
 - 死路徑只判家目錄開頭的路徑（`~/` 或家目錄的絕對路徑）與反引號內的 `.py`／`.sh`／`.js`／`.plist` 檔名；裸 `.md` 檔名、含 `*{}<>…` 的佔位不判。

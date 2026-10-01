@@ -17,7 +17,7 @@ fail() { echo "FAIL $*"; exit 1; }
 pass() { echo "PASS $*"; }
 
 echo "== 1. selftest =="
-"$PY" "$SCAN" --selftest > "$TMP/selftest.log" 2>&1 || { tail -5 "$TMP/selftest.log"; fail "selftest 退出碼非 0"; }
+"$PY" "$SCAN" --selftest > "$TMP/selftest.log" 2>&1 || { grep -v "^PASS" "$TMP/selftest.log" | tail -20; fail "selftest 退出碼非 0（上面是非 PASS 的行；紅的案在 FAIL 行）"; }
 set -- $(tail -1 "$TMP/selftest.log")
 [ "${1:-}" = "SELFTEST" ] || fail "selftest 末行不是 SELFTEST 摘要：$*"
 case "${2:-}" in */*) n=${2%/*}; t=${2#*/};; *) fail "selftest 摘要格式：$2";; esac
