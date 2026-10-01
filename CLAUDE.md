@@ -41,8 +41,9 @@ git grep --untracked -inE "/Users/|~/(Documents|ClaudeProjects)/|Notion|telegram
 - 本檔上面那張表裡示範「私人路徑長什麼樣」的那一列 —— 用的是 `...`／`<私人專案>` 佔位符，不指涉任何真實專案。
 - 作者署名 `Eric Lu (tingyulu)`、`github.com/tingyulu`（LICENSE、`plugin.json`、`marketplace.json`）與 repo 自身連結（README 安裝指令）。
 - 第三方 MIT 致謝連結 `kieiken/ultracode-token-optimization`。
+- `skills/systems-check/scripts/selfcheck_scan.py` 裡兩個**偵測用字面**：`_RE_PATHTOK` 那行的 `/Users/`（偵測絕對路徑）、`SECRET_PATTERNS` 那行的 `telegram_bot`（真憑證格式）——拿掉就偵測不到。CI 白名單逐字面放行這兩行，不放行整檔。
 
-除這三類以外的命中，一律當成外洩處理到查清楚為止。本機另有完整的敏感詞清單，見 `.claude/local-rules.md`（該清單本身不進 repo）。
+除這四類以外的命中，一律當成外洩處理到查清楚為止。本機另有完整的敏感詞清單，見 `.claude/local-rules.md`（該清單本身不進 repo）。
 
 ⚠️ **本檔（CLAUDE.md）也會被 commit 進公開 repo** —— 寫規範時同樣受本節約束，別把私人專案名寫進規則裡。
 
@@ -126,7 +127,7 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 
 | 位置（錨點） | 行號快照 | 內容 |
 |---|---|---|
-| `README.md` 開頭定位句 | L11 | 「**12 支** skills」計數字串 |
+| `README.md` 開頭定位句 | L11 | 「**13 支** skills」計數字串 |
 | `README.md` skill 總表 | L13–26 | 一句話＋R2-D2 對應 |
 | `README.md` `## 這套東西怎麼開發的` | L28–32 | 失憶引言＋自我修正敘事（二審缺陷數、測項數——測試計數一變這裡也要動） |
 | `README.md` `## 相容性矩陣` | L34–61 | 五欄：CLI／Cowork／Gemini／Codex／ChatGPT，含 ✅\* 分級註、trusted-folder、日誌三支資料來源、門鈴註³、ai-review 後端註⁴、未實測範圍註記 |
@@ -134,10 +135,10 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 | `README.md` `## 更新` | L106–114 | `npx skills update`／plugin 更新法／Watch Releases 通知 |
 | `README.md` `## 一組 skill、兩種語言習慣` | L116–123 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
 | `README.md` `## 各 skill 的依賴` | L125–141 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
-| `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「12 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
-| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 186 行**，改完要複驗仍對齊） |
+| `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「13 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
+| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 191 行**，改完要複驗仍對齊） |
 | `prompts/<skill>.md`＋`.en.md` | — | **免安裝簡版**（規則類 skill 適用，damage-report 首例）：skill 的五問／規則本體一改，簡版兩檔要同步改寫，別讓簡版變舊版 |
-| `docs/cheatsheet.md`＋`cheatsheet.en.md`＋兩張 png | — | **速查小抄**：skill 數、一句話定位、觸發詞節選。新增／刪除 skill、改一句話或觸發詞，兩個語言的 md 與圖卡都要跟著改；英文圖卡有原始檔 `cheatsheet.en.html`（重截指令寫在檔頭註解），中文圖卡目前沒有原始檔 |
+| `docs/cheatsheet.md`＋`cheatsheet.en.md`＋兩張 png | — | **速查小抄**：skill 數、一句話定位、觸發詞節選。新增／刪除 skill、改一句話或觸發詞，兩個語言的 md 與圖卡都要跟著改；兩張圖卡都有 HTML 原始檔（`cheatsheet.html`／`cheatsheet.en.html`，重截指令寫在檔頭註解），改 md 後要同步改 HTML 再重截 png |
 | `docs/TEST_PLAN.md` C 段快照 | 文末表格 | 相容性結論快照——README 矩陣評級一動，這裡要同步（反之亦然，見 TEST_PLAN CROSS-07） |
 | `docs/TEST_PLAN.md` D 段 | C 段之前 | 交接門鈴測項 D-01～06——dropoff/pickup 的門鈴行為一改要同步 |
 | `docs/TEST_PLAN.md` E 段＋`docs/AI_REVIEW_SOURCES.md` | D 段之後 | ai-review 測項 E-01～09 與**外部前提的查證原文**（方案涵蓋、安裝／登入指令）——腳本行為或引導文字一改要同步；查證超過兩週視為過期 |

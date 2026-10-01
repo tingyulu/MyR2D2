@@ -1,6 +1,6 @@
 # MyR2D2 Cheat Sheet
 
-All 12 skills on one page: when to use each one, and what to say to trigger it. For install and compatibility, see the [README](../README.en.md). Triggers are a sample; the full lists live in each `skills/*/SKILL.md` description.
+All 13 skills on one page: when to use each one, and what to say to trigger it. For install and compatibility, see the [README](../README.en.md). Triggers are a sample; the full lists live in each `skills/*/SKILL.md` description.
 
 ## Wrap-up & Handoff
 
@@ -24,6 +24,7 @@ All 12 skills on one page: when to use each one, and what to say to trigger it. 
 |---|---|---|---|
 | `/new-mission` | A new task with 3+ steps, or hard to undo: ask → plan → act only on your go → final report | "mission brief", "plan before doing" | 「新任務」「開工簡報」「先問我再做」 |
 | `/damage-report` | Five self-review questions before reporting back on dev or research work | "damage report", "self-review" | 「收尾自檢」「跑五問」 |
+| `/systems-check` | Periodic health check of a project's rules, skills, logs and security; finds and files cards, never fixes (first run on a new project: `--report-only`) | "systems check", "audit this repo" | 「系統自檢」「跑自檢」「體檢」 |
 | `/ai-review` | Get a second opinion from another model, then digest it before reporting | "second opinion", "cross-model review" | 「送二審」「跨模型 review」 |
 | `/ai-search` | Live web answers with citations; says so when nothing is found | "fact-check this", "what is the latest" | 「查證」「上網查一下」「這是不是真的」 |
 

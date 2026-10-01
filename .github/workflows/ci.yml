@@ -23,8 +23,8 @@ jobs:
           import yaml, glob, re, sys
           fails = 0
           files = sorted(glob.glob('skills/*/SKILL.md'))
-          if len(files) != 12:
-              print(f'FAIL skill 數量 {len(files)} != 12(新增/刪除 skill 要同步改這裡與 README 計數)')
+          if len(files) != 13:
+              print(f'FAIL skill 數量 {len(files)} != 13(新增/刪除 skill 要同步改這裡與 README 計數)')
               fails += 1
           for f in files:
               m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
@@ -80,11 +80,15 @@ jobs:
           # 3. 「Notion、Linear」「Notion, Linear」—— README/dropoff/pickup「接上你自己的任務系統」
           #    對第三方產品的通用舉例
           # 4. 「Notion 上傳/Telegram/Slack」—— daily-debrief 的 JOURNAL_POST_CMD 通用舉例
+          # 5. systems-check 掃描器的兩個偵測用字面:`_RE_PATHTOK = re.compile(` 那行含 /Users/(偵測絕對路徑)、
+          #    `("telegram_bot", re.compile(` 那行是真憑證格式——拿掉就偵測不到,逐字面放行這兩行
           # 白名單只准這樣逐字面收窄,不准整檔排除 README/skills(會蓋掉未來的真外洩)。
           HITS=$(git grep -inE "/Users/|~/(Documents|ClaudeProjects)/|Notion|telegram" -- ':!CLAUDE.md' ':!.github/workflows/ci.yml' \
             | grep -vF 'Notion、Linear' \
             | grep -vF 'Notion, Linear' \
-            | grep -vF 'Notion 上傳/Telegram/Slack' || true)
+            | grep -vF 'Notion 上傳/Telegram/Slack' \
+            | grep -vF '_RE_PATHTOK = re.compile(' \
+            | grep -vF '("telegram_bot", re.compile(' || true)
           if [ -n "$HITS" ]; then
             echo "守門 grep 有白名單外的命中:"
             echo "$HITS"
@@ -116,3 +120,6 @@ jobs:
         run: |
           python3 skills/mission-log/tests/harvest_test.py
           LC_ALL=C python3 skills/mission-log/tests/harvest_test.py
+
+      - name: systems-check 回歸(內建 selftest＋乾淨專案零候選＋衝突 fixture;第一次在 Linux 真跑)
+        run: sh skills/systems-check/tests/run.sh

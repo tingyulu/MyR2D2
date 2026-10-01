@@ -53,7 +53,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 "
 ```
 
-**通過**：全部 skill（現為 12 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
+**通過**：全部 skill（現為 13 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
 ⚠️ 驗證器自己也要驗：跑一次**故意壞掉的 YAML**（如 `description: bad: colon`）確認它真的會 FAIL，否則你可能在看一個永遠說 OK 的空轉腳本。
 
 ### REG-02 🟢 agentskills.io 官方 validator
@@ -62,7 +62,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 ```
 
-**通過**：全數（現為 12 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
+**通過**：全數（現為 13 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
 
 ### REG-03 🟢 本地安裝煙霧測試
 
@@ -70,7 +70,7 @@ for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 cd "$(mktemp -d)" && git init -q . && npx --yes skills@latest add <repo根目錄> -y
 ```
 
-**通過**：回報 `Installed 12 skills`（與 repo 現有支數一致）、0 個 Skipped。
+**通過**：回報 `Installed 13 skills`（與 repo 現有支數一致）、0 個 Skipped。
 
 ### REG-04 🟢 公開內容守門
 
@@ -404,6 +404,36 @@ timeanddate）並自行分級官方vs二手，且答出當日 release `0.149.1`�
 
 ---
 
+## G. systems-check（agent 自我體檢，v0.8.0 起）
+
+資料來源＝Claude Code 自家的 `~/.claude`（規則、skills、hooks、settings、專案 memory 與 transcript），所以與日誌三支同一類：skill 格式裝得進其他工具，但那裡沒有這批資料。三案全部把 `SELFCHECK_HOME` 指向臨時目錄，不讀真資料。
+
+### G-01 🟢 掃描器內建自測
+
+```bash
+python3 skills/systems-check/scripts/selfcheck_scan.py --selftest
+```
+
+**通過**：末行 `SELFTEST N/N`、退出碼 0（現為 39/39）。合成 fixture 在臨時目錄建一整套家目錄（多個專案、symlink 出樹與迴圈、hook 注入、@匯入、manifest audits、log 多檔），每案都有正／負對照；改壞範圍判定或遮罩會直接紅。⚠️ 自測也要驗自己：至少兩個突變（拿掉 `--out` 邊界檢查、把 `global_imports` 改成空清單）各要讓對應案變紅，否則你在看一個永遠綠的空轉測試。
+
+### G-02 🟢 乾淨專案零候選
+
+`tests/run.sh` 第 2 案：臨時家目錄＋只有 README 與空 `.claude/` 的專案（另建空的 transcript 目錄，模擬跑過一次 session 的真專案；沒有這個目錄時 usage 段會誠實記 partial、rc 1），`--dry-run` 要 rc 0 且 `candidates.jsonl` 零行。**通過**：`PASS 乾淨專案 rc=0、候選 0`。這是「第一次跑不該被假陽性淹沒」的底線。
+
+### G-03 🟢 衝突 fixture：矛盾規則同桶
+
+`tests/run.sh` 第 3 案：專案 CLAUDE.md 寫「🚫 一律不要用 webhook」、同專案 memory 寫「一律用 webhook」，`--dry-run` 後兩條都要出現在 `rules.jsonl` 且主題交集非空，`rules_by_topic/notify.md` 同時含兩條。**通過**：`PASS 衝突專案：兩條矛盾規則同進 notify 桶`。⚠️ 衝突「判定」是 agent 讀桶做的事（SKILL 第 4 步），掃描器只保證把它們放到同一張桌上；端到端的「至少開出 1 張 conflict 卡」屬 G-05 人工案。
+
+### G-04 🟢 CI 在 Linux 真跑
+
+`.github/workflows/ci.yml` 有具名 step 跑 `sh skills/systems-check/tests/run.sh`。本 skill 開發全程在 macOS，**Linux 的第一次真跑就是 CI**；非 macOS 沒有 `~/Library/LaunchAgents` 時記 notes 不記 incomplete（G-02 的 rc 0 就靠這條）。
+
+### G-05 ✋ 真專案端到端（每個 release 至少一次）
+
+在一個真的專案跑 `--report-only`，人工看 `report.md` 的假陽性率；`.claude/systems-check/latest` 指向本次；全程 `access.log` 不含專案外路徑。外部觀測者驗法見 SKILL.md「驗證輔具」節。
+
+---
+
 ## C. 相容性結論快照（安裝層 2026-08-29 重驗；發現層仍為 2026-07-30 快照，過期重驗）
 
 | 工具 | 安裝層 | 發現層 | 執行層 |
@@ -419,5 +449,7 @@ timeanddate）並自行分級官方vs二手，且答出當日 release `0.149.1`�
 註（2026-08-24）：新增 ai-search（第 11 支）。當日重跑 REG-03 通用安裝煙霧＝**Installed 11 skills**（`npx skills add` 同時裝進 Claude Code／Codex／Gemini CLI／Copilot 等目標，ai-search 含 `tests/` 一起裝出）。表內各 CLI 版本的 **10/10 是 ai-search 之前的逐一 `--agent` 快照**（2026-08-21），per-agent 11 支的 CROSS-01 重驗待補；評級不因新增一支而變動。
 
 註（2026-08-28）：新增 new-mission（第 12 支，純規則零依賴，比照 damage-report 無專屬測試段；prompts/ 另有免安裝簡版兩檔）。當日重跑 REG-03 通用安裝煙霧＝**Installed 12 skills**、new-mission 在列、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 重驗仍待補（同上註）；評級不因新增而變動。
+
+註（2026-10-01）：新增 systems-check（第 13 支，G 段）。資料來源同日誌三支（Claude Code 自家 `~/.claude`），各工具評級比照 ❌；REG-03 通用安裝煙霧重跑＝**Installed 13 skills**、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 未重驗（評級不因新增而變動）。
 
 註（2026-08-29）：**CROSS-01 per-agent 重驗完成，上兩註的「待補」關閉**——gemini-cli／codex 各自乾淨目錄逐一 `--agent` 裝（v0.7.1 working tree），皆 Installed 12、0 Skipped、磁碟實數 12；skills CLI 1.5.23。安裝目標兩者均為統一的 `.agents/skills/`（與 REG-03 通用煙霧同路徑）——安裝層測的是 `npx skills` 安裝器行為，與目標 CLI 自身版本無關，故表內安裝層欄不再綁 CLI 版號；發現層各 CLI 版號快照維持原註。

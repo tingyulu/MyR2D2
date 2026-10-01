@@ -1,6 +1,6 @@
 # MyR2D2 速查小抄（Cheatsheet）
 
-一張表找齊 12 支 skill 的「什麼時候用、怎麼喊」。安裝與相容性見 [README](../README.md)；觸發詞為節選，完整清單在各 `skills/*/SKILL.md` 的 description。
+一張表找齊 13 支 skill 的「什麼時候用、怎麼喊」。安裝與相容性見 [README](../README.md)；觸發詞為節選，完整清單在各 `skills/*/SKILL.md` 的 description。
 
 ## 收工與交接
 
@@ -24,6 +24,7 @@
 |---|---|---|---|
 | `/new-mission` | 三步以上或做錯難回頭的新任務：先問→計畫→點頭才動手→收尾報告 | 「新任務」「開工簡報」「先問我再做」 | "mission brief", "plan before doing" |
 | `/damage-report` | 開發／研究收尾寫回報前的五問自檢 | 「收尾自檢」「跑五問」 | "damage report", "self-review" |
+| `/systems-check` | 定期體檢專案的規則、skill、log、security；只找不修、開交接卡（新專案第一次先 `--report-only`） | 「系統自檢」「跑自檢」「體檢」 | "systems check", "audit this repo" |
 | `/ai-review` | 產出送另一個模型二審，消化意見再回報 | 「送二審」「跨模型 review」 | "second opinion", "cross-model review" |
 | `/ai-search` | 帶引用的即時網路查證，查不到就說查不到 | 「查證」「上網查一下」「這是不是真的」 | "fact-check this", "what is the latest" |
 

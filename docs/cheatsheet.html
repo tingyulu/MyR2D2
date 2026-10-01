@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>MyR2D2 速查小抄</title>
+<!-- Source of cheatsheet.png (2160×2700), the zh-TW card. Re-render with headless Chrome at a 1600×2000 viewport, device scale factor 1.35:
+     chrome --headless --hide-scrollbars --user-data-dir=<temp dir> --window-size=1600,2000 --force-device-scale-factor=1.35 --screenshot=cheatsheet.png file://<absolute path>/cheatsheet.html
+     Headless Chrome may not exit after the screenshot; stop it (only the one using your temp dir) once the PNG appears. -->
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1600px; height: 2000px; box-sizing: border-box;
+    background: #0b1120; color: #e5e7eb;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "PingFang TC", sans-serif;
+    padding: 48px 78px 0;
+    position: relative; overflow: hidden;
+  }
+  header { display: flex; align-items: baseline; gap: 26px; position: relative; }
+  h1 { margin: 0; font-size: 82px; font-weight: 800; letter-spacing: -1px; color: #f8fafc; }
+  .sub { font-size: 33px; color: #93a4c3; }
+  .bot { position: absolute; right: 0; top: 6px; font-size: 58px; }
+  .rule { height: 5px; background: #3b82f6; margin: 20px 0 0; border-radius: 3px; }
+  h2 { margin: 22px 0 0; font-size: 36px; font-weight: 800; color: #60a5fa; letter-spacing: 1px; }
+  .row { display: grid; grid-template-columns: 395px 1fr; padding: 9px 0 9px; border-bottom: 1px solid #1c2638; }
+  .row:last-child { border-bottom: none; }
+  .name { font-family: Menlo, "SF Mono", monospace; font-weight: 700; font-size: 38px; color: #fbbf24; line-height: 1.18; }
+  .desc { font-size: 34px; line-height: 1.3; color: #e8edf5; }
+  .trig { font-size: 28px; color: #86efac; margin-top: 4px; }
+  .trig .dot { color: #5b6b86; padding: 0 8px; }
+  footer { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; font-size: 27px; color: #64748b; }
+  footer .dot { padding: 0 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>MyR2D2 速查小抄</h1>
+    <span class="sub">13 支 skill · 什麼時候用 · 怎麼喊</span>
+    <span class="bot">🤖</span>
+  </header>
+  <div class="rule"></div>
+
+  <h2>收工與交接</h2>
+  <div class="row"><div class="name">/save-all</div><div><div class="desc">重開機／收工前，把只活在對話裡的東西落地並驗證</div><div class="trig">「save-all」<span class="dot">·</span>「要重開機了」<span class="dot">·</span>「關機前收尾」</div></div></div>
+  <div class="row"><div class="name">/dropoff</div><div><div class="desc">把一件事連同脈絡交給另一個專案／未來 session</div><div class="trig">「交接給 X」<span class="dot">·</span>「推球給 X」</div></div></div>
+  <div class="row"><div class="name">/pickup</div><div><div class="desc">讀交接卡並接手；session 開場跑一次防漏接</div><div class="trig">「接手」<span class="dot">·</span>「pickup」<span class="dot">·</span>「看交接」</div></div></div>
+
+  <h2>工作日誌</h2>
+  <div class="row"><div class="name">/mission-log</div><div><div class="desc">零 token 收割某天的 session 活動骨架（只讀不寫）</div><div class="trig">「今天做了什麼」<span class="dot">·</span>「mission log」</div></div></div>
+  <div class="row"><div class="name">/daily-debrief</div><div><div class="desc">由骨架產某天日報（需 mission-log）</div><div class="trig">「日報」<span class="dot">·</span>「daily debrief」</div></div></div>
+  <div class="row"><div class="name">/weekly-debrief</div><div><div class="desc">彙整 7 份日報成週報（需上面兩支）</div><div class="trig">「週報」<span class="dot">·</span>「這週做了什麼」</div></div></div>
+
+  <h2>開工與收尾品質</h2>
+  <div class="row"><div class="name">/new-mission</div><div><div class="desc">三步以上或做錯難回頭：先問→計畫→點頭才動手→收尾報告</div><div class="trig">「新任務」<span class="dot">·</span>「開工簡報」<span class="dot">·</span>「先問我再做」</div></div></div>
+  <div class="row"><div class="name">/damage-report</div><div><div class="desc">收尾寫回報前的五問自檢</div><div class="trig">「收尾自檢」<span class="dot">·</span>「跑五問」</div></div></div>
+  <div class="row"><div class="name">/systems-check</div><div><div class="desc">定期體檢規則、skill、log、security；只找不修、開交接卡</div><div class="trig">「系統自檢」<span class="dot">·</span>「跑自檢」<span class="dot">·</span>「體檢」</div></div></div>
+  <div class="row"><div class="name">/ai-review</div><div><div class="desc">產出送另一個模型二審，消化意見再回報</div><div class="trig">「送二審」<span class="dot">·</span>「跨模型 review」</div></div></div>
+  <div class="row"><div class="name">/ai-search</div><div><div class="desc">帶引用的即時網路查證，查不到就說查不到</div><div class="trig">「查證」<span class="dot">·</span>「上網查一下」</div></div></div>
+
+  <h2>節流與生活</h2>
+  <div class="row"><div class="name">token-optimizer</div><div><div class="desc">派工前必讀的節流規則（自動觸發型）</div><div class="trig">「省 token」<span class="dot">·</span>「配額」</div></div></div>
+  <div class="row"><div class="name">flight-to-<br>calendar</div><div><div class="desc">航班加進 Google Calendar：跨時區正確、標日落日出座位</div><div class="trig">「把航班加到行事曆」</div></div></div>
+
+  <footer>github.com/tingyulu/MyR2D2<span class="dot">·</span>中英文都能喊<span class="dot">·</span>安裝與相容性見 README</footer>
+</body>
+</html>
