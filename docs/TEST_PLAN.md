@@ -428,6 +428,8 @@ python3 skills/systems-check/scripts/selfcheck_scan.py --selftest
 
 `.github/workflows/ci.yml` 有具名 step 跑 `sh skills/systems-check/tests/run.sh`。本 skill 開發全程在 macOS，**Linux 的第一次真跑就是 CI**；非 macOS 沒有 `~/Library/LaunchAgents` 時記 notes 不記 incomplete（G-02 的 rc 0 就靠這條）。
 
+首跑結果（2026-10-01）：第一次就紅——自測 23 在 Linux 失敗，因為多數 Linux 檔案系統沒有 `st_birthtime`，原碼拿不到就「不降級」，新檔永遠不會被標 too_young；改成取 mtime／ctime 較早者估（`c3b4752`）後 39/39 綠。教訓：平台假設要靠真跑驗，macOS 綠 ≠ Linux 綠。
+
 ### G-05 ✋ 真專案端到端（每個 release 至少一次）
 
 在一個真的專案跑 `--report-only`，人工看 `report.md` 的假陽性率；`.claude/systems-check/latest` 指向本次；全程 `access.log` 不含專案外路徑。外部觀測者驗法見 SKILL.md「驗證輔具」節。
