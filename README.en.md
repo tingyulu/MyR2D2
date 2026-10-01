@@ -95,7 +95,7 @@ cp -rn MyR2D2/skills/* ~/.claude/skills/
 
 ### Chat-only? No-install lite prompts
 
-No CLI, nothing to install: [prompts/](prompts/) has paste-ready lite versions — `new-mission` ([zh-TW](prompts/new-mission.md) | [EN](prompts/new-mission.en.md) — paste into persistent instructions so it **asks, plans, waits for your go — then closes with a wrap-up report**), `damage-report` ([zh-TW](prompts/damage-report.md) | [EN](prompts/damage-report.en.md); a 1,260-char [minimal version](prompts/damage-report.lite.en.md) fits narrow fields like ChatGPT Free), `ai-review` ([zh-TW](prompts/ai-review.md) | [EN](prompts/ai-review.en.md) — paste into **another** AI for a cross-model review) and `ai-search` ([zh-TW](prompts/ai-search.md) | [EN](prompts/ai-search.en.md) — paste into an AI **with browsing** for cited, real-time verification).
+No CLI, nothing to install: [prompts/](prompts/) has paste-ready lite versions — `new-mission` ([zh-TW](prompts/new-mission.md) | [EN](prompts/new-mission.en.md) — paste into persistent instructions so it **asks, plans, waits for your go — then closes with a wrap-up report**), `damage-report` ([zh-TW](prompts/damage-report.md) | [EN](prompts/damage-report.en.md); a 1,279-char [minimal version](prompts/damage-report.lite.en.md) fits narrow fields like ChatGPT Free), `ai-review` ([zh-TW](prompts/ai-review.md) | [EN](prompts/ai-review.en.md) — paste into **another** AI for a cross-model review) and `ai-search` ([zh-TW](prompts/ai-search.md) | [EN](prompts/ai-search.en.md) — paste into an AI **with browsing** for cited, real-time verification).
 
 ### Cowork / claude.ai
 

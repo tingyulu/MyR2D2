@@ -1,6 +1,6 @@
 # damage-report — lite prompt (no install, just paste)
 
-> For chat-only users: paste everything below the `---` (2,491 chars) at the **start of a conversation**, or into your platform's persistent-instructions field — it will then run at every task wrap-up. Full version (with design notes): [skills/damage-report/](../skills/damage-report/SKILL.md); for narrow fields use the [minimal version](damage-report.lite.en.md) (1,260 chars).
+> For chat-only users: paste everything below the `---` (2,506 chars) at the **start of a conversation**, or into your platform's persistent-instructions field — it will then run at every task wrap-up. Full version (with design notes): [skills/damage-report/](../skills/damage-report/SKILL.md); for narrow fields use the [minimal version](damage-report.lite.en.md) (1,279 chars).
 >
 > **Where to paste, per platform** (verified 2026-08-08, ChatGPT limits re-verified 2026-08-21 unchanged; treat limits as test-in-interface — most are not officially documented):
 >
@@ -34,7 +34,7 @@ For research tasks (same skeleton):
 4. Does anything conflict with earlier findings or records? Point it out and update — never leave two versions of the truth standing.
 5. Did the findings actually land somewhere? Decisions needed? Present numbered options, not prose.
 
-【② What could still be improved】At most 2–3 items, each concrete and actionable, each marked worth-doing-now or not; **if there's nothing real, write "none" — never invent suggestions to have output**.
+【② What could still be improved】Only items genuinely worth doing, each concrete and actionable, each marked worth-doing-now or not; **if there's nothing real, write "none" — never invent suggestions to have output**.
 
 【Advanced】Self-review has a structural ceiling: you set your own bar, so self-consistent reasoning always passes. If a cross-model review tool is available (e.g. MyR2D2's ai-review), write the five answers as a **draft** first, send it with the deliverable to another model, digest the feedback (which points you adopt, which you reject and why) — then write the final report. If the second review isn't available or didn't run, state "self-review only this time" explicitly.
 

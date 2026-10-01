@@ -13,7 +13,7 @@ After finishing any build / bug-fix / research task, run this self-check **befor
 4. Any "changed A, forgot B" inconsistencies? Conflicts with earlier records must be named and updated.
 5. Who uses this — were they told, in terms of **their** perspective? Research: findings must land somewhere; decisions as numbered options.
 
-【② What could be improved】Max 2–3 concrete items; **write "none" if nothing real — never pad**.
+【② What could be improved】Only genuinely worthwhile, concrete items; **write "none" if nothing real — never pad**.
 
 【Advanced】If a cross-model review tool (e.g. ai-review) is available, send the five-question draft to another model before finalizing; otherwise state "self-review only".
 

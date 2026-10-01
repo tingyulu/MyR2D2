@@ -23,15 +23,22 @@ license: MIT
 | 主編排者（session 本體） | 跟著 session 走，不動 | 只做判斷與仲裁 |
 | 執行者（寫 code/改檔） | 中檔（如 `sonnet`） | 品質夠、配額友善 |
 | 審查者（找碴/review） | 中檔，預設 | 高風險領域才升旗艦（見下） |
-| 機械工作（摘要/格式化/grep 彙整） | 低檔（如 `haiku`）或中檔＋`effort: 'low'` | 不需判斷力的活別用貴模型 |
+| 機械工作（摘要/格式化/grep 彙整） | 低檔（如 `haiku`）或中檔（`effort` 留 `'medium'`，🚫 別降到 `'low'`） | 不需判斷力的活別用貴模型；但省推理深度換來的是草稿品質，低檔位 ≠ 低 effort |
 | 仲裁/最終判斷 | 不指定（繼承 session） | **唯一例外，必須加註解說明為什麼** |
 
 **審查者升旗艦的門檻**（符合任一才升）：認證／金流／資料遺失風險／資安／併發／持久化／公開 API／大型重構。
 
-**🔴 絕對規則：session 模型是旗艦檔時，每一個 `agent()` 呼叫都必須明確指定 `model`**（仲裁 lane 除外，且要註解）。漏指定＝整包 fan-out 全繼承貴檔，配額瞬間蒸發。這是本 skill 存在的第一理由。
+**🔴 絕對規則：session 模型是旗艦檔時，每一個 `agent()`／Agent tool 呼叫都必須明確指定 `model`**（仲裁 lane 除外，且要註解）。漏指定＝整包 fan-out 全繼承貴檔，配額瞬間蒸發。這是本 skill 存在的第一理由。
 > 判準是「**session 跑的比中檔貴就適用**」，不是特定型號名——新模型上市不用改這條。
 
-**⚙️ 進階兜底（Claude Code CLI 專屬——其他工具沒有 `settings.json`／這個環境變數，直接跳過本段）**：在 `settings.json` 設 `env.CLAUDE_CODE_SUBAGENT_MODEL=sonnet` 可以把所有 subagent 硬鎖在中檔（實測是硬上限——呼叫時指定別的檔也會被蓋掉），漏指定不再燒旗艦。要臨時全力跑：在**該專案**寫 `.claude/settings.local.json` 的 env 蓋掉它（只影響該專案、即時生效），任務完刪掉回落。優先序：專案 local > user 全局 > process env > 呼叫參數。
+**⚙️ 進階兜底（Claude Code CLI 專屬——其他工具沒有 `settings.json`／這個環境變數，直接跳過本段）**：在 `settings.json` 設 `env.CLAUDE_CODE_SUBAGENT_MODEL=sonnet`，**漏寫 `model` 的 subagent 就落到中檔**，不再默默繼承旗艦。⚠️ 它是**地板，不是硬上限**：呼叫時明寫的 `model` 會蓋過它——指定低檔會真的降、指定旗艦也會真的燒。所以 env 只救「忘了寫」，救不了「寫錯」；正解仍是每個 `agent()`／Agent 呼叫都明寫 `model`，env 當兜底。（這個行為隨 CLI 版本變過：舊版曾實測為硬上限、近期版本為地板。「model 寫在呼叫上」是兩種行為下都對的做法，所以本 skill 只押這一條。）🚫 別拿專案 `.claude/settings.local.json` 蓋 env 當「臨時全力」開關：要全力就把旗艦檔寫在該次派工的每個呼叫上，任務結束沒有設定要回收、也不會漏關。
+
+**📌 派工的四個硬層事實**（Claude Code 實測；其他工具對照自家機制）：
+
+1. **effort 怎麼繼承**：Agent tool 沒有 `effort` 參數，子代理跟主 session 同 effort——主 session 開最深推理時，派出去的每一支也都是最深，估算要照這個算。Workflow 的 `agent()` 可以寫 `effort`，執行／驗證寫 `'medium'` 以上，🚫 別拿 `'low'` 當預設（省下的是推理深度，換來的是草稿品質）。
+2. 🚫 **`subagent_type: 'fork'` 不當執行者**：fork 繼承父 session 整段 context、固定跑父模型（`model` 參數被忽略），肥 session＋旗艦檔＝最燒的組合。執行者一律 fresh general-purpose 或 Workflow `agent()`，並明寫 `model`。
+3. **主 session context 肥時，派乾淨執行者可能反而省**：省的是新增 token（輸入＋輸出＋快取寫入）的檔位單價差與旗艦配額，快取讀取各檔位價差不大。判準：兩條路用**同一組假設**估 API 等值——自己做＝預估呼叫數 × 主 session 每次呼叫的新增量；派工＝每支固定開場成本（載入規則、記憶、工具定義，實測在數萬 tokens 量級）＋預估呼叫數 × 子代理每次呼叫量——**派工 ≤ 自己做的 1.2 倍就派**，不必等到明顯更省；估算是區間不是點，差在 ±20% 內算「差不多」。反面照舊：一個檔幾十行、有測試的小改動，開場行李比任務重，不派。
+4. **別名實跑哪一版跟宿主 CLI 版本走**：`sonnet`／`opus`／`haiku` 這類別名指向哪個具體型號由 CLI 決定、改版會變；要確認實跑的是哪版，看子代理 transcript 的 `model` 欄，別看自己寫了什麼。
 
 ## 2. 執行結果壓縮再上報（鐵則）
 
@@ -71,7 +78,9 @@ license: MIT
 
 - [ ] 主編排者 prompt 裡沒有原始 diff/log/大 JSON（§2）
 - [ ] 每個 `agent()` 都有明確 `model`，或有「為什麼繼承 session 模型」的註解（§1）
-- [ ] session 跑旗艦檔時，零例外全部指定 model（§1 絕對規則）
+- [ ] session 跑旗艦檔時，零例外全部指定 model（§1 絕對規則）；Workflow `agent()` 再寫 `effort`，地板 `'medium'`（§1 硬層事實 1）
+- [ ] 沒有用 `subagent_type: 'fork'` 當執行者（§1 硬層事實 2）
+- [ ] 主 session context 肥時做過「派工 vs 自己做」的 1.2 倍比較，不是憑感覺派（§1 硬層事實 3）
 - [ ] 審查者 prompt 含「無裁決權、findings＋嚴重度＋行號引用」（§3）
 - [ ] 審查者輸出經 synthesis agent 過濾才進執行者（§3）
 - [ ] 完成由專職驗證代理用證據確認，非自我宣告（§4）
