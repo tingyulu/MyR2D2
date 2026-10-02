@@ -22,7 +22,7 @@
 > import yaml, glob, re, sys
 > fails = 0
 > files = sorted(glob.glob('skills/*/SKILL.md'))
-> assert len(files) == 12, f'skill 數 {len(files)} != 12'
+> assert len(files) == 13, f'skill 數 {len(files)} != 13'
 > for f in files:
 >     m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
 >     try: yaml.safe_load(m.group(1))
