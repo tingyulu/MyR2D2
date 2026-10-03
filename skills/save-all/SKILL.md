@@ -74,22 +74,44 @@ git add -A && git commit -m "pre-reboot flush $(date +%m%d-%H%M)" && git push
 
 > Cowork／claude.ai 環境沒有本機 transcript，這一步直接跳過，不影響其他步驟。
 
-讀本 session transcript 的真實 `usage`（不要自估 —— 模型無法可靠內省自身用量）：
+讀本 session transcript 的真實 `usage`（不要自估 —— 模型無法可靠內省自身用量）。🔴 **一則回應只算一次**：transcript 把同一則 API 回應拆成多行（每個 content block 一行），每行都帶同一份 `usage`，而 `output_tokens` 是串流累計快照 —— 逐行相加會把回應數與四欄灌水約 2 倍。所以按 `message.id` 併成一則（沒 id 的行用 `requestId` 併回唯一對到的那則）、四欄取最大；同一則出現兩組不同用量、或對到兩個 `requestId`，不硬加、改成回報：
 
 ```bash
 tx=$(find ~/.claude/projects -name "${CLAUDE_CODE_SESSION_ID}.jsonl" 2>/dev/null | head -1)
 [ -n "$tx" ] && python3 - "$tx" <<'PY'
 import json,sys
-i=o=cc=cr=n=0
-for line in open(sys.argv[1]):
-    try: u=json.loads(line).get('message',{}).get('usage')
-    except: continue
+K=('input_tokens','output_tokens','cache_creation_input_tokens','cache_read_input_tokens')
+resp={}; req2ids={}; lines=0
+for ln,line in enumerate(open(sys.argv[1],encoding='utf-8',errors='replace'),1):
+    try: o=json.loads(line); m=o.get('message') or {}; u=m.get('usage')
+    except Exception: continue
     if not isinstance(u,dict): continue
-    i+=u.get('input_tokens',0); o+=u.get('output_tokens',0)
-    cc+=u.get('cache_creation_input_tokens',0); cr+=u.get('cache_read_input_tokens',0); n+=1
-print(f"session 累計 {n} turns: input={i:,} output={o:,} cache_creation={cc:,} cache_read={cr:,}")
+    v=[u.get(k) or 0 for k in K]
+    if not all(isinstance(x,int) and not isinstance(x,bool) for x in v): continue
+    lines+=1; mid=m.get('id'); rq=o.get('requestId')
+    if mid and rq and m.get('model')!='<synthetic>': req2ids.setdefault(rq,set()).add(mid)
+    e=resp.setdefault(('id',mid) if mid else (('req',rq) if rq else ('line',ln)),{'v':[0]*4,'sig':None,'req':None,'bad':False})
+    e['v']=[max(a,b) for a,b in zip(e['v'],v)]; sig=(v[0],v[2],v[3])
+    if any(sig): e['bad']|=(e['sig'] not in (None,sig)); e['sig']=e['sig'] or sig
+    if rq: e['bad']|=(e['req'] not in (None,rq)); e['req']=e['req'] or rq
+for key in [k for k in resp if k[0]=='req']:
+    ids=req2ids.get(key[1],set())
+    if len(ids)==1:
+        src=resp.pop(key); e=resp.setdefault(('id',next(iter(ids))),{'v':[0]*4,'sig':None,'req':None,'bad':False})
+        e['v']=[max(a,b) for a,b in zip(e['v'],src['v'])]; e['bad']|=src['bad']
+    elif len(ids)>1: resp[key]['bad']=True
+for ids in req2ids.values():
+    if len(ids)>1:
+        for mid in ids:
+            if ('id',mid) in resp: resp[('id',mid)]['bad']=True
+bad=sum(e['bad'] for e in resp.values())
+i,o,cc,cr=[sum(e['v'][k] for e in resp.values() if not e['bad']) for k in range(4)]
+print(f"session 累計 {len(resp)} 則回應（{lines} 行 usage 併成；同一則回應拆成的多行只算一次）: input={i:,} output={o:,} cache_creation={cc:,} cache_read={cr:,}")
+if bad: print(f"⚠️ {bad} 則回應用量自相矛盾，已排除、不硬加；回報照實寫「token 統計不完整」")
 PY
 ```
+
+（🚫 別改成 `python3 -c "$(cat <<'PY' …)"`：macOS 的 bash 3.2 會把 f-string 的 `{…,}` 當大括號展開吃掉。）
 
 ### 5. 回報 go/no-go
 

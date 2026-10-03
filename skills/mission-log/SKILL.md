@@ -23,6 +23,7 @@ description: '零 token 的 session 活動收割器。從 Claude Code 本來就�
    ```
 
    輸出每個活躍 session 的:時間段、專案@分支、turns、token 消耗、模型、工具直方圖、使用者原話(前 5 句)。機器可讀版加 `--format jsonl`。
+   口徑:turns＝API 回應數、token＝新增 in+out+cache_creation(不含 cache 讀取)。🔴 **一則回應只算一次**:transcript 把同一則回應拆成多行(每個 content block 一行)、每行都帶同一份 usage,收割器按 `message.id` 併成一則、四欄取最大——逐行相加會把 turns 與 tokens 灌水約 2 倍,別自己另寫一份逐行加。
 
 2. **呈現**:把骨架整理給使用者看;若使用者追問某個 session 細節,再視需要深讀該 transcript(骨架裡有 session id 前綴可定位),**深讀前先告知會消耗較多 context**。
 
@@ -30,6 +31,7 @@ description: '零 token 的 session 活動收割器。從 Claude Code 本來就�
 
 - 🚫 **只讀不寫**:本 skill 不落任何檔、不改任何狀態;落檔是 /daily-debrief 的事。
 - ✅ **骨架說什麼就是什麼**:不腦補骨架裡沒有的活動;抽不到資料就回報「該日無記錄」。
+- ⚠️ **用量矛盾不硬加**:同一則回應出現兩組不同用量、或對到兩個 requestId 時,該則 turns 照算、tokens 不計,列上標 `usage_conflict`、stderr 警告。看到就去查 transcript,別手動補數字。
 - ⚠️ **回溯上限＝transcript 保留期**:Claude Code 預設 30 天後刪 transcript(`cleanupPeriodDays` 可調大);超過保留期的日期無料可收,直說。
 
 ## 進階:跨機器收割

@@ -186,6 +186,16 @@ ssh <主機> "python3 - --date <日期>" < skills/mission-log/scripts/harvest.py
 
 ---
 
+### J-07 🟢 一則回應只算一次（回歸，2026-10-03 起）
+
+```bash
+python3 skills/mission-log/tests/harvest_test.py
+```
+
+**通過**：四案全綠——`test_one_response_counted_once`（同 id 三行只算一則、output 取最大；負對照：id 各異照算四則）、`test_requestid_alias_and_synthetic`（沒 id 的行用 requestId 併回；`<synthetic>` 借同 requestId 但有自己的 id ⇒ 自己算一則、0 token、不算矛盾）、`test_usage_conflict_reported_not_summed`（同 id 兩組非零不等的 input、或對到兩個 requestId ⇒ turns 照算、tokens 不計、列上 `usage_conflict`＋stderr 警告＋md 標記）、`test_midnight_straddle_belongs_to_first_line_day`（跨午夜回應歸第一行那天、翌日不重算也不多出 session）。
+由來：transcript 每個 content block 一行、同一份 usage 重抄、`output_tokens` 是串流累計快照；舊版逐行加把 turns／tokens 灌水約 2 倍（本機實測 10-02 一天 3.3 倍，另一台每日 1.6〜7.2 倍）。真資料對照：同一天舊版 vs 新版，工具直方圖與原話逐 session 相同、只有 turns／tokens 縮水，證明只動了用量口徑。
+狀態（2026-10-03）：✅ 本機（含 `LC_ALL=C` 變體）；CI 隨 push 跑同一支測試。
+
 ## D. 交接門鈴（dropoff/pickup 的跨 session 即時通知，v0.4.0 起）
 
 > 底層＝Claude Code v2.1.224+ 的 cross-session messaging（`ListAgents`＋`SendMessage`；桌面 app 為 session 管理工具變體，以 sessionId 定址）。官方支援 macOS／Linux；送往 bypass-permissions session 的訊息會被暫留待人工核准（`crossSessionInbound`）。版本與行為敘述已對照官方 changelog 與 docs 查證（2026-08-09）。設計原則：門鈴只是通知，卡片檔案才是真相——以下任何一項失敗都不得影響交接成立。
