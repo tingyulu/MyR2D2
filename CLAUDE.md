@@ -164,7 +164,7 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
   0. **CI 綠燈（見 `.github/workflows/ci.yml`）為必要條件**；REG-03 安裝煙霧與發現層抽驗仍人工。本地先跑 [docs/TEST_PLAN.md](docs/TEST_PLAN.md) A 段回歸，全綠才進下一步。這道關卡防的缺陷影響**所有** npx-skills 下游 agent（v0.1.1 事故對 gemini-cli／codex 同樣 0/5 全滅），不只 Claude Code——別再把影響半徑寫窄。
   1. bump `plugin.json` 的 `version`，**與該版所有內容改動放同一個 commit**（不要「先改內容、後補版號」）
   2. commit message＝`vX.Y.Z: <繁中一句話摘要>`，內文條列改了什麼
-  3. 手動建 annotated tag：`git tag -a vX.Y.Z -m "<發布公告文字>"` —— tag 訊息是**獨立撰寫的公告，不抄 commit message**
+  3. 手動建 annotated tag：`git tag -a vX.Y.Z -m "<發布公告文字>"` —— tag 訊息是**獨立撰寫的公告，不抄 commit message**。推 tag 會再跑一次 CI，最後一步「版號對 tag」在 tag ≠ `plugin.json` 的 `version` 時直接紅（2026-10-16 起，借自 Shiyin 的 release.yml）
   4. `git push origin main --tags`
   5. **發版收尾：同步部署副本**——若本機環境部署了 repo 內腳本的副本（排程在跑的、複製到其他目錄的），以 repo 為真相重新同步並**以雜湊比對回讀驗證**，別信 `cp` 的沉默成功。部署清單與一鍵檢查屬本機環境，記在 `.claude/local-rules.md`（不進 repo）。此步驟的由來：v0.6.0 修了收割器、四份部署副本全忘了同步，排程照跑舊版無人發現。
 - CI＝GitHub Actions（2026-08 起）；Release 仍手動。**每版建 GitHub Release**（`gh release create vX.Y.Z`，內文＝雙語更新留言；v0.1.1 起三版皆有，2026-08-07 定為慣例）。

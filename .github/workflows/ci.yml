@@ -5,6 +5,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']   # 推 tag 也跑整套,外加最後一步「版號對 tag」(鐵則 4)
   pull_request:
   workflow_dispatch:
 
@@ -123,3 +124,13 @@ jobs:
 
       - name: systems-check 回歸(內建 selftest＋乾淨專案零候選＋衝突 fixture;第一次在 Linux 真跑)
         run: sh skills/systems-check/tests/run.sh
+
+      - name: 版號對 tag(鐵則 4:tag 必須等於 .claude-plugin/plugin.json 的 version;只在推 v* tag 時跑)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          V="v$(python3 -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')"
+          if [ "$V" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 跟 .claude-plugin/plugin.json 的 version($V)不一致——版號單一來源是 plugin.json,tag 要跟它走"
+            exit 1
+          fi
+          echo "OK tag $GITHUB_REF_NAME == plugin.json $V"

@@ -157,7 +157,7 @@ dropoff/pickup default to the zero-dependency file-based version; if you run you
 ```
 MyR2D2/
 ├── .claude-plugin/                    ← plugin.json + marketplace.json (single plugin)
-├── .github/workflows/                 ← CI (YAML validation, content gate, behavior matrix, harvest tests)
+├── .github/workflows/                 ← CI (YAML validation, content gate, behavior matrix, harvest tests, tag vs version)
 ├── skills/                            ← 13 skills (zh-TW body, bilingual triggers)
 │   ├── save-all/  ├── dropoff/  ├── pickup/
 │   ├── mission-log/  ├── daily-debrief/  ├── weekly-debrief/

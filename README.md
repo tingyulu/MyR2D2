@@ -157,7 +157,7 @@ dropoff/pickup 預設是零依賴的檔案版；如果你有自己的任務系�
 ```
 MyR2D2/
 ├── .claude-plugin/                    ← plugin.json + marketplace.json(單一 plugin)
-├── .github/workflows/                 ← CI(YAML 驗證、守門 grep、行為矩陣、harvest 測試)
+├── .github/workflows/                 ← CI(YAML 驗證、守門 grep、行為矩陣、harvest 測試、tag 對版號)
 ├── skills/                            ← 13 支 skill(繁中本體、雙語觸發)
 │   ├── save-all/  ├── dropoff/  ├── pickup/
 │   ├── mission-log/  ├── daily-debrief/  ├── weekly-debrief/
