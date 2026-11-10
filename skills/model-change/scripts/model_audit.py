@@ -17,7 +17,8 @@
 
 roots.json 長這樣（path 可用 ~，也可以是單一檔案；maxdepth 預設 8；only 是選填的路徑 regex，
 比對時路徑分隔符一律換成 /，只掃符合的檔；每個 root 可另加 "skip_dirs"（只對它生效）與
-"optional": true（不存在或 0 個檔時不算錯））：
+"optional": true（不存在或 0 個檔時不算錯））。掃家目錄這種大範圍時，系統保護、列不出來的目錄
+用 skip_dirs 明寫排除（家目錄正下方的 .Trash 內建不進去，A 段會印出來）：
   {"roots": [{"name": "runners", "path": "~/.my-runner", "maxdepth": 2},
              {"name": "notes", "path": "~/notes", "maxdepth": 3, "only": "/models/[^/]+\\\\.md$"}],
    "skip_dirs": ["my-big-data-dir"]}
@@ -30,6 +31,7 @@ roots.json 長這樣（path 可用 ~，也可以是單一檔案；maxdepth 預�
 
 設計上的自我檢查：
   1. 每個根目錄都印出掃了幾個檔、略過了什麼；不存在、0 個檔或讀不到就回 3，不讓「沒掃到」看起來像「沒問題」。
+     讀不到的檔與列不出來的目錄會印出路徑與原因；D、E 段是 0 處時提醒先確認範圍；用預設範圍時明講它看不到哪裡。
   2. 不內建模型清單：現役與 legacy 由呼叫的人從官方原文給，工具不會拿過期的清單替你判斷。
   3. 「不認得」獨立一類照樣列出：新模型、打錯的 ID、雲端平台包裝過的 ID、網址片段都會落在這裡，由人判斷。
   4. D 段把一條指令當成一個單位來看（續行、括號、清單都先組起來），旗標不會借到隔壁那條指令的。
@@ -45,6 +47,8 @@ roots.json 長這樣（path 可用 ~，也可以是單一檔案；maxdepth 預�
   - 太大的檔（超過 1.5 MB）不讀、不是 UTF-8 的檔替換壞字元後照讀：A 段有計數與路徑，但不影響結束碼。
   - 遮機密靠樣式比對（長串英數、token=… 這類鍵值、網址帳密），不保證遮乾淨；不放心就加 --no-text。
   - 沒有防「掃描途中檔案被換成連結」這種刻意攻擊；請掃自己信得過的目錄。
+  - 這支掃描器與它的測試檔不享有豁免，跟別的檔一樣被掃；自測資料在執行時才拼出來，原始碼裡沒有會被
+    判讀成呼叫或模型 ID 的字面。舊版（0.9.0）的副本還有那些字面，被掃到時會出現在 C、D 段，更新副本即可。
 """
 import argparse
 import bisect
@@ -95,7 +99,7 @@ HEREDOC_SH_RE = re.compile(r"\b(?:bash|sh|zsh|dash|ksh|ssh|sudo|tmux)\b")
 HEREDOC_PY_RE = re.compile(r"\bpython[0-9.]*\b")
 HEREDOC_JS_RE = re.compile(r"\b(?:node|deno|bun)\b")
 # 引號沒對上時退回的單行比對（只用來把東西列進「不確定」）
-FALLBACK_RE = re.compile(r"""(?:\bclaude\b|CLAUDE_BIN|claude_bin|claude_cmd)[^\n#]{0,160}?(?:(?<![\w-])-p(?![\w-])|--print\b)""")
+FALLBACK_RE = re.compile(r"""(?:\bclaude\b|CLAUDE_BIN|claude_bin|claude_cmd)[^\n#]{0,160}?(?:(?<![\w-])-[p](?![\w-])|--prin[t]\b)""")   # 寫成 [p]、[t]：這一行自己才不會被當成一條呼叫
 
 SKIP_DIRS = {".git", "node_modules", "venv", ".venv", "__pycache__", ".build", "build", "dist", "logs", "log",
              "site-packages", "vendor", "target", "coverage", ".next", "DerivedData", "Pods",
@@ -110,7 +114,7 @@ BRACKETS = {"sh": "(", "py": "([{", "js": "([", "cfg": "([{", "plist": "([{"}
 CLOSERS = {")": "(", "]": "[", "}": "{"}
 MAX_BYTES = 1_500_000
 TAIL_CAP = 4000
-SELF = os.path.realpath(__file__)
+LIST_CAP = 8
 # 預設範圍：設定目錄（不含 projects，那裡是對話紀錄與跑過的產物，不是現役設定）、各專案的 memory 筆記、目前目錄
 DEFAULT_ROOTS = [{"name": "claude-config", "path": "~/.claude", "maxdepth": 5, "skip_dirs": ["projects"]},
                  {"name": "claude-memory", "path": "~/.claude/projects", "maxdepth": 3, "only": r"/memory/[^/]+\.md$", "optional": True},
@@ -141,23 +145,49 @@ def short_path(p, home):
     return CTRL_RE.sub("?", "~" + p[len(home):] if home and (p == home or p.startswith(home + os.sep)) else p)
 
 
-def walk(root, maxdepth, only, skip_dirs, follow, info):
+def why_of(exc):
+    return CTRL_RE.sub("?", type(exc).__name__ + ("：" + exc.strerror if getattr(exc, "strerror", None) else ""))
+
+
+def _read(p):
+    with open(p, "rb") as fh:
+        return fh.read()
+
+
+_walk = os.walk   # 跟 _read 一樣獨立成一個名字：自測要在任何平台上注入「列不出來」「讀不到」
+
+
+def walk(root, maxdepth, only, skip_dirs, follow, info, errs, home, pruned):
     if os.path.isfile(root):
         yield root
         return
     root_real = os.path.realpath(root)
     seen_dirs = {root_real}
 
-    def onerr(_exc):
+    def is_home(d):   # 用「是不是同一個目錄」比，不比字串：大小寫不敏感的檔案系統、路徑別名都對得到
+        try:
+            return bool(home) and os.path.samefile(d, home)
+        except OSError:
+            return False
+
+    def onerr(exc):
         info["walk_errors"] += 1
+        errs.append({"path": getattr(exc, "filename", None) or root, "why": why_of(exc)})
 
     base = root.rstrip(os.sep).count(os.sep)
-    for d, dirs, files in os.walk(root, followlinks=follow, onerror=onerr):
+    for d, dirs, files in _walk(root, followlinks=follow, onerror=onerr):
         keep = []
+        at_home = ".Trash" in dirs and is_home(d)
         for x in dirs:
             if x in skip_dirs:
                 continue
             p = os.path.join(d, x)
+            if at_home and x == ".Trash":
+                # 家目錄正下方的系統垃圾桶：不是現役設定，macOS 上沒有完整磁碟取用權的程式也列不出來。
+                # 只認這一個確切位置（別處同名的目錄照掃），而且記下來讓報告印出，不無聲略過。
+                info["pruned"] += 1
+                pruned.append(p)
+                continue
             if os.path.islink(p):
                 rp = os.path.realpath(p)
                 if not follow:
@@ -601,18 +631,20 @@ def family_of(path, data):
 
 def scan(roots, current, legacy, skip_dirs, follow=False):
     home = os.path.expanduser("~")
-    res = {"roots": [], "ids": {}, "stale_in_code": [], "headless": [], "launchers": [], "mentions": [], "doc_mentions": [], "too_large": []}
+    res = {"roots": [], "ids": {}, "stale_in_code": [], "headless": [], "launchers": [], "mentions": [], "doc_mentions": [], "too_large": [],
+           "walk_errors": [], "unreadable": [], "pruned_dirs": []}
+    errs, pruned = [], []
     seen_real = set()
     for r in roots:
         path = os.path.abspath(os.path.expanduser(r["path"]))
         info = {"name": r["name"], "path": short_path(path, home), "exists": os.path.exists(path), "optional": bool(r.get("optional")), "files": 0, "dup": 0,
-                "unreadable": 0, "walk_errors": 0, "too_large": 0, "binary": 0, "decode_replaced": 0, "links_skipped": 0}
+                "unreadable": 0, "walk_errors": 0, "too_large": 0, "binary": 0, "decode_replaced": 0, "links_skipped": 0, "pruned": 0}
         res["roots"].append(info)
         if not info["exists"]:
             continue
         only = re.compile(r["only"]) if r.get("only") else None
         ids = res["ids"].setdefault(r["name"], {})
-        for p in walk(path, int(r.get("maxdepth", 8)), only, skip_dirs | set(r.get("skip_dirs", [])), follow, info):
+        for p in walk(path, int(r.get("maxdepth", 8)), only, skip_dirs | set(r.get("skip_dirs", [])), follow, info, errs, home, pruned):
             rp = os.path.realpath(p)
             if rp in seen_real:        # 跟前面的根目錄重疊：這個根目錄有掃到它，但內容只算一次
                 info["dup"] += 1
@@ -622,10 +654,10 @@ def scan(roots, current, legacy, skip_dirs, follow=False):
                     info["too_large"] += 1
                     res["too_large"].append(short_path(p, home))
                     continue
-                with open(p, "rb") as fh:
-                    data = fh.read()
-            except OSError:
+                data = _read(p)
+            except OSError as exc:
                 info["unreadable"] += 1
+                res["unreadable"].append({"path": short_path(p, home), "why": why_of(exc)})
                 continue
             seen_real.add(rp)
             if b"\x00" in data[:4096]:
@@ -653,8 +685,6 @@ def scan(roots, current, legacy, skip_dirs, follow=False):
                 if "claude" in text:
                     res["doc_mentions"] += [{"file": sp, "line": i + 1} for i, ln in enumerate(text.split("\n")) if FALLBACK_RE.search(ln)]
                 continue
-            if rp == SELF:
-                continue
             # 先粗篩，免得每個檔都逐字元讀：有 -p／--print 的都要看（執行檔可能是變數），啟動指令則要有 claude 字樣
             if not (P_RE.search(text) or ("claude" in text.lower() and LAUNCH_FLAG_RE.search(text))):
                 continue
@@ -662,6 +692,8 @@ def scan(roots, current, legacy, skip_dirs, follow=False):
             res["headless"] += [dict(h, file=sp) for h in hl]
             res["launchers"] += [dict(h, file=sp) for h in la]
             res["mentions"] += [{"file": sp, "line": x} for x in mentions]
+    res["walk_errors"] = [{"path": short_path(e["path"], home), "why": e["why"]} for e in errs]
+    res["pruned_dirs"] = [short_path(x, home) for x in pruned]
     res["bad_roots"] = [r["name"] for r in res["roots"] if not r["optional"] and (not r["exists"] or r["files"] + r["dup"] == 0)]
     res["incomplete_roots"] = [r["name"] for r in res["roots"] if r["unreadable"] or r["walk_errors"]]
     return res
@@ -680,14 +712,24 @@ def show_model(h):
 def render(res, have_current):
     out = ["== A. 根目錄與檔數"]
     notes = (("dup", "與前面的根目錄重複"), ("unreadable", "🔴 讀不到"), ("walk_errors", "🔴 目錄列不出來"), ("too_large", "🟡 太大略過"),
-             ("decode_replaced", "🟡 不是 UTF-8、有字元被替換"), ("links_skipped", "🟡 連結指到根目錄外、沒跟"), ("binary", "二進位略過"))
+             ("decode_replaced", "🟡 不是 UTF-8、有字元被替換"), ("links_skipped", "🟡 連結指到根目錄外、沒跟"), ("pruned", "🟡 家目錄的系統垃圾桶、沒進去"), ("binary", "二進位略過"))
     for r in res["roots"]:
         mark = "不存在" if not r["exists"] else ("掃到 0 個檔" if r["files"] + r["dup"] == 0 else "")
         mark = mark and (f"（選用，這裡{mark}）" if r["optional"] else "🔴 " + mark)
         extra = "".join(f"（{lab} {r[k]}）" for k, lab in notes if r.get(k))
         out.append(f"   {r['name']:18s} {r['files']:6d} 檔{extra}  {r['path']}  {mark}")
-    for pth in res.get("too_large", [])[:8]:
+    for pth in res.get("too_large", [])[:LIST_CAP]:
         out.append(f"      太大沒讀：{pth}")
+    for key, lab in (("walk_errors", "🔴 目錄列不出來"), ("unreadable", "🔴 讀不到")):
+        for e in res.get(key, [])[:LIST_CAP]:
+            out.append(f"      {lab}：{e['path']}（{e['why']}）")
+        if len(res.get(key, [])) > LIST_CAP:
+            out.append(f"      {lab}：另有 {len(res[key]) - LIST_CAP} 處沒列在這裡，加 --json report.json 重跑可以看到全部（欄位 {key}）")
+    for pth in res.get("pruned_dirs", []):
+        out.append(f"      🟡 系統垃圾桶沒進去：{pth}（要掃就把它單獨列成一個根目錄）")
+    if res.get("default_roots"):
+        out.append("   🟡 這次用的是預設範圍（設定目錄、memory 筆記、目前目錄）。排程腳本與常駐啟動腳本的部署副本放在別處"
+                   "（家目錄、系統排程目錄）的話這裡看不到，用 --roots-file 列進去再跑。")
     out.append("\n== B. 各區出現的完整 ID" + ("" if have_current else "（沒給 --current，全部歸在「不認得」或 legacy）"))
     label = {"current": "現役", "legacy": "legacy", "unknown": "不認得"}
     for name, kinds in res["ids"].items():
@@ -727,9 +769,14 @@ def render(res, have_current):
             out.append(f"   {h['file']}:{h['line']}  [❓ {h['why']}｜{flag(h)}]  {h['text'][:70]}")
     if res.get("mentions"):
         out.append(f"   （另有 {len(res['mentions'])} 處判成只是訊息、說明文字或資料裡提到 claude -p，沒列；位置在 --json 的 mentions）")
+    zero = "   🟡 0 處不等於沒有：先確認 A 段的根目錄涵蓋了{what}實際放的地方（含部署副本），再相信這個數字。"
+    if not res["headless"]:
+        out.append(zero.format(what="排程腳本與無頭腳本"))
     if res.get("doc_mentions"):
         out.append(f"   （.md 與 .txt 不判讀：另有 {len(res['doc_mentions'])} 行提到 claude -p，位置在 --json 的 doc_mentions；會被照著執行的指令文件要自己看）")
     out.append(f"\n== E. 常駐啟動指令：共 {len(res['launchers'])} 處")
+    if not res["launchers"]:
+        out.append(zero.format(what="常駐啟動腳本"))
     for h in res["launchers"]:
         out.append(f"   {h['file']}:{h['line']}  [{show_model(h) or '沒寫 model'}{'｜effort 有寫' if h['effort'] else ''}]")
     if not have_current:
@@ -737,7 +784,8 @@ def render(res, have_current):
     if res["bad_roots"]:
         out.append(f"\n🔴 這些根目錄不存在或掃到 0 個檔，結果不可信：{'、'.join(res['bad_roots'])}（先確認路徑）")
     if res["incomplete_roots"]:
-        out.append(f"\n🔴 這些根目錄裡有檔案或目錄讀不到，結果不完整：{'、'.join(res['incomplete_roots'])}（看 A 段的數字）")
+        out.append(f"\n🔴 這些根目錄裡有檔案或目錄讀不到，結果不完整：{'、'.join(res['incomplete_roots'])}（路徑與原因在 A 段）。"
+                   "先修權限；確定不必掃的目錄（例如系統保護的目錄）明寫進 roots 檔的 skip_dirs，再跑一次。")
     return "\n".join(out)
 
 
@@ -785,81 +833,87 @@ def selftest():
     ok = []
     add = lambda name, good: ok.append((name, good))
     try:
-        for d in ("runners/a", "docs", "empty", "outside", "linked", "broken"):
+        for d in ("runners/a", "docs", "empty", "outside", "linked", "broken"):   # fx 與 locked 在用到的地方才建
             os.makedirs(os.path.join(root, d))
+
+        # 自測資料裡的執行檔名稱與模型 ID 都寫成佔位符、寫檔時才換回來：這支檔的原始碼裡不留會被判讀成
+        # 呼叫或模型 ID 的字面，所以它自己（與任何一份副本）被掃到時是乾淨的，不需要任何豁免規則
+        cname = "clau" + "de"
+        real = lambda s: s.replace("@C@", cname).replace("@CC@", cname.upper())
+        NEW, OLD = real("@C@-new-2"), real("@C@-old-1")
 
         def w(rel, s):
             with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
-                fh.write(s)
+                fh.write(real(s))
 
         # 假機密在執行時才拼出來：原始碼裡不留長得像金鑰的字面，免得金鑰掃描器（含同包的 systems-check）每次都報
         fake = "abcdefghijklm" + "nopqrstuvwxyz" + "0123456789"
-        w("runners/a/run.sh", '#!/bin/sh\nOUT="$(claude -p "$PROMPT" \\\n  --model claude-old-1 \\\n  --allowedTools "$T")"\n# claude -p 這行是註解\n')
-        w("runners/a/bare.sh", '#!/bin/sh\nclaude -p "hi" --output-format json\n')
-        w("runners/a/good.py", 'cmd = ["claude", "-p", prompt, "--model", "claude-new-2", "--effort", "high"]\n')
-        w("runners/a/launch.sh", '#!/bin/zsh\nclaude --model claude-new-2-20300101 --effort high --name x --remote-control\n')
-        w("runners/a/typo.json", '{"model": "claude-nwe-2"}\n')
-        w("runners/a/talk.sh", '#!/bin/sh\necho "claude -p 逾時了"\nlog "會跑 claude -p /usage"\nrun_it || echo "claude -p failed"\n')
+        w("runners/a/run.sh", '#!/bin/sh\nOUT="$(@C@ -p "$PROMPT" \\\n  --model @C@-old-1 \\\n  --allowedTools "$T")"\n# @C@ -p 這行是註解\n')
+        w("runners/a/bare.sh", '#!/bin/sh\n@C@ -p "hi" --output-format json\n')
+        w("runners/a/good.py", 'cmd = ["@C@", "-p", prompt, "--model", "@C@-new-2", "--effort", "high"]\n')
+        w("runners/a/launch.sh", '#!/bin/zsh\n@C@ --model @C@-new-2-20300101 --effort high --name x --remote-control\n')
+        w("runners/a/typo.json", '{"model": "@C@-nwe-2"}\n')
+        w("runners/a/talk.sh", '#!/bin/sh\necho "@C@ -p 逾時了"\nlog "會跑 @C@ -p /usage"\nrun_it || echo "@C@ -p failed"\n')
         w("runners/a/argv.py", 'argv = base + [\n    "--model", m,\n    "-p", build(x),\n    "--tools", "Read",\n]\n')
-        w("runners/a/oldstyle.json", '{"model": "claude-3-5-sample-20200101", "k": "s' + 'k-' + fake + '"}\n')
-        w("runners/a/leak.sh", '#!/bin/sh\nTOK' + 'EN=' + fake + ' claude -p "x" --model claude-new-2\n')
-        w("runners/a/split.sh", '#!/bin/sh\n"$CLAUDE_BIN" \\\n  -p "$prompt" \\\n  --model "$MODEL"\n')
-        w("runners/a/borrow.py", 'import subprocess\nrun(["claude", "-p", prompt])\nrun(["other", "--model", "x", "--effort", "high"])\n')
-        w("runners/a/wrapped.py", 'print(subprocess.run(["claude", "-p", prompt]))\n')
-        w("runners/a/notclaude.py", 'subprocess.run(["mkdir", "-p", path])\nsubprocess.run(["grep",\n  "-p",\n  pat])\n')
-        w("runners/a/assign.sh", '#!/bin/sh\nCMD="claude -p --model claude-old-1"\n')
-        w("runners/a/dashc.sh", '#!/bin/sh\nbash -c \'cd /tmp && claude -p hi\'\n')
-        w("runners/a/heredoc.sh", "#!/bin/sh\ncat > p.txt <<EOF\nDon't run claude -p here, it's only a prompt.\nEOF\nclaude -p \"$(cat p.txt)\" --model claude-new-2 --effort low\n")
-        w("runners/a/pyhere.sh", "#!/bin/sh\npython3 - <<'PY'\nimport subprocess\nsubprocess.run(['claude', '-p', 'x',\n                '--model', 'claude-new-2'])\nPY\n")
-        w("runners/a/prompt.py", 'PROMPT = """\nStep 1: run claude -p "summarize" and wait.\n"""\n')
-        w("runners/a/concat.py", 'cmd = ["claude", "-p", prompt, "--model=" + model]\n')
-        w("runners/a/agent.plist", '<plist><dict><key>ProgramArguments</key><array>\n<string>/usr/local/bin/claude</string>\n<string>-p</string>\n<string>hi</string>\n</array></dict></plist>\n')
-        w("runners/a/tmux.sh", '#!/bin/sh\ntmux new-session -d -s main "claude --model claude-new-2 --name main"\n')
-        w("runners/a/hook.json", '{"hooks": [{"command": "cd /srv && claude -p \\"nightly\\" --model claude-old-1"}]}\n')
-        w("runners/a/later.py", 'cmd = [\n    "claude",\n    "-p", query,\n]\nif model:\n    cmd.extend(["--model", model])\n')
-        w("runners/a/later.sh", '#!/bin/sh\nargs=("$CLAUDE_BIN" -p "$x")\nargs+=(--model "$M" --effort high)\n')
-        w("runners/a/listdata.py", 'WORDS = ["runner", "headless", "claude -p", "cron"]\n')
-        w("runners/a/meta.json", '{"description": "claude -p wrapper for nightly jobs"}\n')
+        w("runners/a/oldstyle.json", '{"model": "@C@-3-5-sample-20200101", "k": "s' + 'k-' + fake + '"}\n')
+        w("runners/a/leak.sh", '#!/bin/sh\nTOK' + 'EN=' + fake + ' @C@ -p "x" --model @C@-new-2\n')
+        w("runners/a/split.sh", '#!/bin/sh\n"$@CC@_BIN" \\\n  -p "$prompt" \\\n  --model "$MODEL"\n')
+        w("runners/a/borrow.py", 'import subprocess\nrun(["@C@", "-p", prompt])\nrun(["other", "--model", "x", "--effort", "high"])\n')
+        w("runners/a/wrapped.py", 'print(subprocess.run(["@C@", "-p", prompt]))\n')
+        w("runners/a/not@C@.py", 'subprocess.run(["mkdir", "-p", path])\nsubprocess.run(["grep",\n  "-p",\n  pat])\n')
+        w("runners/a/assign.sh", '#!/bin/sh\nCMD="@C@ -p --model @C@-old-1"\n')
+        w("runners/a/dashc.sh", '#!/bin/sh\nbash -c \'cd /tmp && @C@ -p hi\'\n')
+        w("runners/a/heredoc.sh", "#!/bin/sh\ncat > p.txt <<EOF\nDon't run @C@ -p here, it's only a prompt.\nEOF\n@C@ -p \"$(cat p.txt)\" --model @C@-new-2 --effort low\n")
+        w("runners/a/pyhere.sh", "#!/bin/sh\npython3 - <<'PY'\nimport subprocess\nsubprocess.run(['@C@', '-p', 'x',\n                '--model', '@C@-new-2'])\nPY\n")
+        w("runners/a/prompt.py", 'PROMPT = """\nStep 1: run @C@ -p "summarize" and wait.\n"""\n')
+        w("runners/a/concat.py", 'cmd = ["@C@", "-p", prompt, "--model=" + model]\n')
+        w("runners/a/agent.plist", '<plist><dict><key>ProgramArguments</key><array>\n<string>/usr/local/bin/@C@</string>\n<string>-p</string>\n<string>hi</string>\n</array></dict></plist>\n')
+        w("runners/a/tmux.sh", '#!/bin/sh\ntmux new-session -d -s main "@C@ --model @C@-new-2 --name main"\n')
+        w("runners/a/hook.json", '{"hooks": [{"command": "cd /srv && @C@ -p \\"nightly\\" --model @C@-old-1"}]}\n')
+        w("runners/a/later.py", 'cmd = [\n    "@C@",\n    "-p", query,\n]\nif model:\n    cmd.extend(["--model", model])\n')
+        w("runners/a/later.sh", '#!/bin/sh\nargs=("$@CC@_BIN" -p "$x")\nargs+=(--model "$M" --effort high)\n')
+        w("runners/a/listdata.py", 'WORDS = ["runner", "headless", "@C@ -p", "cron"]\n')
+        w("runners/a/meta.json", '{"description": "@C@ -p wrapper for nightly jobs"}\n')
         w("runners/a/varexec.sh", '#!/bin/sh\n"$AI_CLI" -p "$prompt"\nmkdir -p "$OUT"\n"$TMUX_BIN" -L "$SOCK" capture-pane -p -t x\n')
         w("runners/a/varargv.py", 'subprocess.run([cli, "-p", prompt])\n')
-        w("runners/a/shift.sh", '#!/bin/sh\nx=$(( 1 << n ))\nclaude -p "$x" --model claude-new-2 --effort low\n')
-        w("runners/a/creds.sh", '#!/bin/sh\nAPI_K' + 'EY=ab.cd/ef claude -p "see https://bob' + ':hunter2@example.test/x" --model claude-new-2\n')
-        w("docs/howto.md", "跑這行：\n\n    claude -p \"$PROMPT\"\n")
+        w("runners/a/shift.sh", '#!/bin/sh\nx=$(( 1 << n ))\n@C@ -p "$x" --model @C@-new-2 --effort low\n')
+        w("runners/a/creds.sh", '#!/bin/sh\nAPI_K' + 'EY=ab.cd/ef @C@ -p "see https://bob' + ':hunter2@example.test/x" --model @C@-new-2\n')
+        w("docs/howto.md", "跑這行：\n\n    @C@ -p \"$PROMPT\"\n")
         with open(os.path.join(root, "runners", "a", "crlf.sh"), "wb") as fh:
-            fh.write(b'#!/bin/sh\r\nclaude \\\r\n  -p "$x" \\\r\n  --model claude-new-2\r\n')
-        w("broken/odd.sh", "#!/bin/sh\nclaude -p \"$x\" --model claude-new-2\necho 'never closed\n")
-        w("docs/notes.md", "舊筆記提到 claude-old-1 與 claude-new-2。\n")
-        w("outside/secret.sh", '#!/bin/sh\nclaude -p "outside"\n')
+            fh.write(real('#!/bin/sh\r\n@C@ \\\r\n  -p "$x" \\\r\n  --model @C@-new-2\r\n').encode("utf-8"))
+        w("broken/odd.sh", "#!/bin/sh\n@C@ -p \"$x\" --model @C@-new-2\necho 'never closed\n")
+        w("docs/notes.md", "舊筆記提到 @C@-old-1 與 @C@-new-2。\n")
+        w("outside/secret.sh", '#!/bin/sh\n@C@ -p "outside"\n')
         can_link = True
         try:
             os.symlink(os.path.join(root, "outside", "secret.sh"), os.path.join(root, "linked", "out.sh"))
             os.symlink(os.path.join(root, "outside"), os.path.join(root, "linked", "outdir"))
         except (OSError, NotImplementedError, AttributeError):
             can_link = False
-        w("linked/in.sh", '#!/bin/sh\nclaude -p "inside" --model claude-new-2 --effort high\n')
+        w("linked/in.sh", '#!/bin/sh\n@C@ -p "inside" --model @C@-new-2 --effort high\n')
         roots = [{"name": "runners", "path": os.path.join(root, "runners"), "maxdepth": 3},
                  {"name": "docs", "path": os.path.join(root, "docs")},
                  {"name": "empty", "path": os.path.join(root, "empty")},
                  {"name": "missing", "path": os.path.join(root, "nope")}]
-        res = scan(roots, {"claude-new-2"}, {"claude-old-1"}, SKIP_DIRS)
+        res = scan(roots, {NEW}, {OLD}, SKIP_DIRS)
         by = {}
         for h in res["headless"]:
             by.setdefault(os.path.basename(h["file"]), []).append(h)
         one = lambda f: by[f][0] if len(by.get(f, [])) == 1 else {}
         st = {(os.path.basename(s["file"]), s["id"], s["kind"]) for s in res["stale_in_code"]}
         la = {os.path.basename(h["file"]): h for h in res["launchers"]}
-        add("無頭呼叫：跨行的 --model 讀得到、註解行不算", one("run.sh").get("model") == "claude-old-1" and one("run.sh").get("status") == "call")
+        add("無頭呼叫：跨行的 --model 讀得到、註解行不算", one("run.sh").get("model") == OLD and one("run.sh").get("status") == "call")
         add("無頭呼叫：沒寫 model 的標成沒寫", one("bare.sh").get("status") == "call" and one("bare.sh").get("model_kind", 0) is None)
-        add("無頭呼叫：清單寫法的 model 與 effort 都讀得到", one("good.py").get("model") == "claude-new-2" and one("good.py").get("model_kind") == "literal" and one("good.py").get("effort") is True)
+        add("無頭呼叫：清單寫法的 model 與 effort 都讀得到", one("good.py").get("model") == NEW and one("good.py").get("model_kind") == "literal" and one("good.py").get("effort") is True)
         add("印訊息、記 log 裡的 claude -p 不算呼叫，另計提到次數", "talk.sh" not in by and len([x for x in res["mentions"] if x["file"].endswith("talk.sh")]) == 3)
         add("看不到執行檔名稱的清單（有 -p 與 --model）列為不確定，model 認成變數", one("argv.py").get("status") == "uncertain" and one("argv.py").get("model_kind") == "variable")
-        add("舊式命名（版本在前）的 ID 也抓得到", ("oldstyle.json", "claude-3-5-sample-20200101", "unknown") in st)
+        add("舊式命名（版本在前）的 ID 也抓得到", ("oldstyle.json", real("@C@-3-5-sample-20200101"), "unknown") in st)
         add("報告裡的指令片段遮掉長串英數", fake not in one("leak.sh").get("text", fake))
         add("run.sh 有 model 沒 effort", one("run.sh").get("effort") is False)
-        add("常駐啟動指令：帶日期尾碼的現役 ID 算現役", la.get("launch.sh", {}).get("effort") is True and "claude-new-2-20300101" in res["ids"]["runners"].get("current", {}))
-        add("程式檔裡的 legacy 被列出", ("run.sh", "claude-old-1", "legacy") in st)
-        add("打錯的 ID 歸不認得並列出", ("typo.json", "claude-nwe-2", "unknown") in st)
-        add(".md 裡的舊 ID 只計數、不列進 C 段", not any(f == "notes.md" for f, _, _ in st) and res["ids"]["docs"]["legacy"]["claude-old-1"] == 1)
+        add("常駐啟動指令：帶日期尾碼的現役 ID 算現役", la.get("launch.sh", {}).get("effort") is True and real("@C@-new-2-20300101") in res["ids"]["runners"].get("current", {}))
+        add("程式檔裡的 legacy 被列出", ("run.sh", OLD, "legacy") in st)
+        add("打錯的 ID 歸不認得並列出", ("typo.json", real("@C@-nwe-2"), "unknown") in st)
+        add(".md 裡的舊 ID 只計數、不列進 C 段", not any(f == "notes.md" for f, _, _ in st) and res["ids"]["docs"]["legacy"][OLD] == 1)
         add("空目錄與不存在的目錄都進 bad_roots", set(res["bad_roots"]) == {"empty", "missing"})
         text = render(res, True)
         add("報告含五段標題、不確定小節、文件提示與紅燈提示", all(k in text for k in ("== A.", "== B.", "== C.", "== D.", "== E.", "不確定（工具看不出來", "doc_mentions", "旗標在後面才補要看條件 2 處", "結果不可信")))
@@ -867,15 +921,15 @@ def selftest():
         add("旗標不借隔壁指令的：前一條沒寫 model 就是沒寫", one("borrow.py").get("status") == "call" and one("borrow.py").get("model_kind", 0) is None and one("borrow.py").get("effort") is False)
         add("包在 print(...) 裡的真呼叫照樣算", one("wrapped.py").get("status") == "call")
         add("mkdir -p、grep -p 這類清單不算、也不列不確定", "notclaude.py" not in by)
-        add("字串賦值裡的指令列為不確定，不算確定也不當沒事", one("assign.sh").get("status") == "uncertain" and one("assign.sh").get("model") == "claude-old-1")
+        add("字串賦值裡的指令列為不確定，不算確定也不當沒事", one("assign.sh").get("status") == "uncertain" and one("assign.sh").get("model") == OLD)
         add("bash -c '…' 裡的呼叫算確定", one("dashc.sh").get("status") == "call" and one("dashc.sh").get("model_kind", 0) is None)
         add("heredoc 純文字（含撇號）不判讀，後面的真呼叫照樣讀到", one("heredoc.sh").get("status") == "call" and one("heredoc.sh").get("line") == 5 and one("heredoc.sh").get("effort") is True)
-        add("餵給 python 的 heredoc 照 python 讀，跨行清單的 model 讀得到", one("pyhere.sh").get("status") == "call" and one("pyhere.sh").get("model") == "claude-new-2")
+        add("餵給 python 的 heredoc 照 python 讀，跨行清單的 model 讀得到", one("pyhere.sh").get("status") == "call" and one("pyhere.sh").get("model") == NEW)
         add("多行 prompt 字串裡提到 claude -p 不算呼叫", "prompt.py" not in by)
         add("--model 的值解析不了時標成解析不了，不當成沒寫", one("concat.py").get("model_kind") == "unparsed")
         add("plist 的 ProgramArguments 認得到", one("agent.plist").get("status") == "call" and one("agent.plist").get("line") == 2)
-        add("tmux 字串裡的啟動指令列進 E 段", la.get("tmux.sh", {}).get("model") == "claude-new-2")
-        add("設定檔字串裡的指令算確定，model 讀得到", one("hook.json").get("status") == "call" and one("hook.json").get("model") == "claude-old-1")
+        add("tmux 字串裡的啟動指令列進 E 段", la.get("tmux.sh", {}).get("model") == NEW)
+        add("設定檔字串裡的指令算確定，model 讀得到", one("hook.json").get("status") == "call" and one("hook.json").get("model") == OLD)
         add("旗標在後面幾行才補（extend、+=）：標成後面才加，不算沒寫", one("later.py").get("model_kind") == "later" and one("later.sh").get("model_kind") == "later" and one("later.sh").get("effort_later") is True)
         add("python 清單裡的字串元素當資料，不列", "listdata.py" not in by and any(x["file"].endswith("listdata.py") for x in res["mentions"]))
         add("設定檔裡不是指令欄位的字串列為不確定", one("meta.json").get("status") == "uncertain")
@@ -884,26 +938,126 @@ def selftest():
         add("片段遮掉鍵值型機密與網址帳密", "ab.cd/ef" not in one("creds.sh").get("text", "ab.cd/ef") and "hunter2" not in one("creds.sh").get("text", "hunter2"))
         add(".md 不判讀但記下提到的行", [x["line"] for x in res["doc_mentions"] if x["file"].endswith("howto.md")] == [3] and "howto.md" not in by)
         add("控制字元不會原樣進報告", "\x1b" not in mask("a\x1b[31mb") and short_path("/x/a\x1b[2Jb", "/home/z") == "/x/a?[2Jb")
-        add("CRLF 換行的檔：反斜線續行照樣組成一條指令", one("crlf.sh").get("status") == "call" and one("crlf.sh").get("model") == "claude-new-2" and one("crlf.sh").get("line") == 2)
+        add("CRLF 換行的檔：反斜線續行照樣組成一條指令", one("crlf.sh").get("status") == "call" and one("crlf.sh").get("model") == NEW and one("crlf.sh").get("line") == 2)
         optres = scan([{"name": "opt", "path": os.path.join(root, "nope"), "optional": True}, roots[1]], set(), set(), SKIP_DIRS)
         add("選用的根目錄不存在不算錯", not optres["bad_roots"])
         skipres = scan([{"name": "r", "path": os.path.join(root, "runners"), "skip_dirs": ["a"]}, roots[1]], set(), set(), SKIP_DIRS)
         add("單一根目錄的 skip_dirs 有效（整個子目錄沒掃）", skipres["roots"][0]["files"] == 0 and not skipres["headless"])
         res2 = scan(roots[:2], set(), set(), SKIP_DIRS)
-        add("沒給清單時全部歸不認得", not res2["ids"]["runners"].get("current") and "claude-new-2" in res2["ids"]["runners"]["unknown"] and not res2["bad_roots"])
-        res3 = scan([{"name": "broken", "path": os.path.join(root, "broken")}], {"claude-new-2"}, set(), SKIP_DIRS)
+        add("沒給清單時全部歸不認得", not res2["ids"]["runners"].get("current") and NEW in res2["ids"]["runners"]["unknown"] and not res2["bad_roots"])
+        res3 = scan([{"name": "broken", "path": os.path.join(root, "broken")}], {NEW}, set(), SKIP_DIRS)
         add("引號沒對上的檔：找到的呼叫全部降成不確定", len(res3["headless"]) == 1 and res3["headless"][0]["status"] == "uncertain")
         res4 = scan([{"name": "all", "path": os.path.join(root, "runners")}, {"name": "again", "path": os.path.join(root, "runners", "a")}], set(), set(), SKIP_DIRS)
         add("重疊的根目錄：後面那個不算 0 個檔，內容只算一次", not res4["bad_roots"] and res4["roots"][1]["files"] == 0 and res4["roots"][1]["dup"] > 0
             and len([h for h in res4["headless"] if h["file"].endswith("bare.sh")]) == 1)
         if can_link:
-            res5 = scan([{"name": "linked", "path": os.path.join(root, "linked")}], {"claude-new-2"}, set(), SKIP_DIRS)
+            res5 = scan([{"name": "linked", "path": os.path.join(root, "linked")}], {NEW}, set(), SKIP_DIRS)
             f5 = {os.path.basename(h["file"]) for h in res5["headless"]}
             add("指到根目錄外的檔案與目錄連結預設不跟、有計數", f5 == {"in.sh"} and res5["roots"][0]["links_skipped"] == 2)
-            res6 = scan([{"name": "linked", "path": os.path.join(root, "linked")}], {"claude-new-2"}, set(), SKIP_DIRS, follow=True)
+            res6 = scan([{"name": "linked", "path": os.path.join(root, "linked")}], {NEW}, set(), SKIP_DIRS, follow=True)
             add("--follow-links 會跟過去讀，同一個檔不重複算", len([h for h in res6["headless"] if "outside" in h["text"]]) == 1 and res6["roots"][0]["links_skipped"] == 0)
         else:
             print("[SKIP] 這個環境建不了符號連結，兩條連結測試沒跑")
+        # 家目錄正下方的系統垃圾桶不進去、有記錄；別處同名的目錄照掃。家目錄用環境變數暫時指到自測的暫存夾
+        for d in ("home/.Trash", "home/proj/.Trash"):
+            os.makedirs(os.path.join(root, d))
+        w("home/.Trash/old.sh", '#!/bin/sh\n@C@ -p "trash"\n')
+        w("home/proj/.Trash/deploy.sh", '#!/bin/sh\n@C@ -p "deploy"\n')
+        saved = {k: os.environ.get(k) for k in ("HOME", "USERPROFILE")}
+        os.environ["HOME"] = os.environ["USERPROFILE"] = os.path.join(root, "home")
+        try:
+            res7 = scan([{"name": "home", "path": "~"}], {NEW}, set(), SKIP_DIRS)
+            res8 = scan([{"name": "trash", "path": os.path.join("~", ".Trash")}], {NEW}, set(), SKIP_DIRS)
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+        add("家目錄正下方的垃圾桶不進去而且報告有印；別處同名的目錄照掃",
+            [os.path.basename(h["file"]) for h in res7["headless"]] == ["deploy.sh"] and res7["roots"][0]["pruned"] == 1
+            and len(res7["pruned_dirs"]) == 1 and "系統垃圾桶沒進去" in render(res7, True) and not res7["incomplete_roots"])
+        add("把垃圾桶單獨列成根目錄就照掃", [os.path.basename(h["file"]) for h in res8["headless"]] == ["old.sh"] and not res8["pruned_dirs"])
+        alias = os.path.join(root, "HOME")
+        if os.path.isdir(alias) and os.path.samefile(alias, os.path.join(root, "home")):   # 大小寫不敏感的檔案系統才有這個別名
+            os.environ["HOME"] = os.environ["USERPROFILE"] = os.path.join(root, "home")
+            try:
+                res7b = scan([{"name": "home", "path": alias}], {NEW}, set(), SKIP_DIRS)
+            finally:
+                for k, v in saved.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+            add("家目錄用不同大小寫的路徑傳進來，垃圾桶照樣認得", len(res7b["pruned_dirs"]) == 1 and [os.path.basename(h["file"]) for h in res7b["headless"]] == ["deploy.sh"])
+        else:
+            print("[SKIP] 這個檔案系統分大小寫，「家目錄路徑大小寫不同」那一條沒跑")
+        res_empty = scan([roots[1]], {NEW}, set(), SKIP_DIRS)
+        add("D、E 段是 0 處時提醒先確認範圍，有東西時不提醒", render(res_empty, True).count("0 處不等於沒有") == 2 and "0 處不等於沒有" not in render(res, True))
+        add("用預設範圍時報告明講它看不到哪裡，自訂範圍不講", "預設範圍" in render(dict(res_empty, default_roots=True), True) and "預設範圍" not in render(res_empty, True))
+        # 列不出來的目錄、讀不到的檔：注入錯誤，任何平台、用 root 跑都驗得到
+        os.makedirs(os.path.join(root, "inj", "sub"))
+        w("inj/ok.sh", '#!/bin/sh\n@C@ -p "x" --model @C@-new-2 --effort low\n')
+        w("inj/noread.sh", '#!/bin/sh\n@C@ -p "y"\n')
+        inj_sub = os.path.join(root, "inj", "sub")
+        g, real_walk, real_read = globals(), _walk, _read
+
+        def fake_walk(top, followlinks=False, onerror=None):
+            for d, dirs, files in real_walk(top, followlinks=followlinks, onerror=onerror):
+                yield d, dirs, files          # 呼叫端在這裡修剪 dirs（skip_dirs）
+                if "sub" in dirs:
+                    dirs.remove("sub")
+                    onerror(PermissionError(13, "Permission denied", os.path.join(d, "sub")))
+
+        def fake_read(path):
+            if path.endswith("noread.sh"):
+                raise PermissionError(13, "Permission denied", path)
+            return real_read(path)
+
+        g["_walk"], g["_read"] = fake_walk, fake_read
+        try:
+            res9 = scan([{"name": "inj", "path": os.path.join(root, "inj")}], {NEW}, set(), SKIP_DIRS)
+            res10 = scan([{"name": "inj", "path": os.path.join(root, "inj"), "skip_dirs": ["sub"]}], {NEW}, set(), SKIP_DIRS)
+        finally:
+            g["_walk"], g["_read"] = real_walk, real_read
+        t9 = render(res9, True)
+        add("模擬列目錄與讀檔出錯（注入的錯誤）：記成不完整，報告印出路徑與原因",
+            res9["incomplete_roots"] == ["inj"] and [e["path"] for e in res9["walk_errors"]] == [short_path(inj_sub, os.path.expanduser("~"))]
+            and [os.path.basename(e["path"]) for e in res9["unreadable"]] == ["noread.sh"] and all("PermissionError" in e["why"] for e in res9["walk_errors"] + res9["unreadable"])
+            and "目錄列不出來：" in t9 and "讀不到：" in t9 and "skip_dirs" in t9 and [os.path.basename(h["file"]) for h in res9["headless"]] == ["ok.sh"])
+        add("模擬出錯的目錄明寫進 skip_dirs 後不再算目錄錯誤，讀不到的檔照樣算不完整",
+            not res10["walk_errors"] and res10["roots"][0]["walk_errors"] == 0 and res10["incomplete_roots"] == ["inj"])
+        many = dict(res9, walk_errors=[{"path": "d%d" % k, "why": "x"} for k in range(LIST_CAP + 3)])
+        add("錯誤太多時只列前幾筆並講還有幾筆，不叫人去看沒產生的檔", "另有 3 處沒列在這裡，加 --json report.json 重跑" in render(many, True))
+        if os.name == "posix" and os.geteuid() != 0:
+            sub, noread = os.path.join(root, "locked", "sub"), os.path.join(root, "locked", "noread.sh")
+            os.makedirs(sub)
+            w("locked/ok.sh", '#!/bin/sh\n@C@ -p "x" --model @C@-new-2 --effort low\n')
+            w("locked/noread.sh", '#!/bin/sh\n@C@ -p "y"\n')
+            os.chmod(sub, 0)
+            os.chmod(noread, 0)
+            try:
+                res11 = scan([{"name": "locked", "path": os.path.join(root, "locked")}], {NEW}, set(), SKIP_DIRS)
+            finally:
+                os.chmod(sub, 0o700)
+                os.chmod(noread, 0o600)
+            add("真的沒權限的目錄與檔（chmod 000）：算不完整，路徑與原因都有",
+                res11["incomplete_roots"] == ["locked"] and [os.path.basename(e["path"]) for e in res11["walk_errors"]] == ["sub"]
+                and [os.path.basename(e["path"]) for e in res11["unreadable"]] == ["noread.sh"] and all(e["why"] for e in res11["walk_errors"] + res11["unreadable"]))
+        else:
+            print("[SKIP] 這個環境做不出沒權限的目錄（Windows，或用 root 跑），「真的沒權限」那一條沒跑（注入錯誤的兩條照跑）")
+        # 掃描器掃自己的原始碼（與同包的測試檔，有的話）：不享有豁免，靠的是原始碼裡沒有會被判讀的字面。
+        # 以後有人在這支檔或測試檔裡加了寫死的呼叫或模型 ID，這一條會紅
+        os.makedirs(os.path.join(root, "selfcopy"))
+        here = os.path.dirname(os.path.abspath(__file__))
+        shutil.copy(os.path.abspath(__file__), os.path.join(root, "selfcopy", "model_audit.py"))
+        sibling = os.path.join(here, os.pardir, "tests", "run.sh")
+        if os.path.isfile(sibling):
+            shutil.copy(sibling, os.path.join(root, "selfcopy", "run.sh"))
+        res12 = scan([{"name": "selfcopy", "path": os.path.join(root, "selfcopy")}], set(), set(), SKIP_DIRS)
+        add("掃描器掃自己的副本與測試檔：有讀進去，B、C、D、E 段都是空的",
+            res12["roots"][0]["files"] >= 1 and not res12["bad_roots"] and not any(res12["ids"].values())
+            and not res12["stale_in_code"] and not res12["headless"] and not res12["launchers"])
         out_json = os.path.join(root, "report.json")
         write_json(out_json, res)
         with open(out_json, encoding="utf-8") as fh:
@@ -964,6 +1118,7 @@ def main(argv):
     split = lambda s: {x.strip() for x in s.split(",") if x.strip()}
     current, legacy = split(a.current), split(a.legacy)
     res = scan(roots, current, legacy, skip, a.follow_links)
+    res["default_roots"] = not a.roots_file
     if a.no_text:
         for h in res["headless"] + res["launchers"]:
             h["text"] = ""
