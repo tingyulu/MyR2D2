@@ -792,6 +792,8 @@ def selftest():
             with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
                 fh.write(s)
 
+        # 假機密在執行時才拼出來：原始碼裡不留長得像金鑰的字面，免得金鑰掃描器（含同包的 systems-check）每次都報
+        fake = "abcdefghijklm" + "nopqrstuvwxyz" + "0123456789"
         w("runners/a/run.sh", '#!/bin/sh\nOUT="$(claude -p "$PROMPT" \\\n  --model claude-old-1 \\\n  --allowedTools "$T")"\n# claude -p 這行是註解\n')
         w("runners/a/bare.sh", '#!/bin/sh\nclaude -p "hi" --output-format json\n')
         w("runners/a/good.py", 'cmd = ["claude", "-p", prompt, "--model", "claude-new-2", "--effort", "high"]\n')
@@ -799,8 +801,8 @@ def selftest():
         w("runners/a/typo.json", '{"model": "claude-nwe-2"}\n')
         w("runners/a/talk.sh", '#!/bin/sh\necho "claude -p 逾時了"\nlog "會跑 claude -p /usage"\nrun_it || echo "claude -p failed"\n')
         w("runners/a/argv.py", 'argv = base + [\n    "--model", m,\n    "-p", build(x),\n    "--tools", "Read",\n]\n')
-        w("runners/a/oldstyle.json", '{"model": "claude-3-5-sample-20200101", "k": "sk-abcdefghijklmnopqrstuvwxyz0123456789"}\n')
-        w("runners/a/leak.sh", '#!/bin/sh\nTOKEN=abcdefghijklmnopqrstuvwxyz0123456789 claude -p "x" --model claude-new-2\n')
+        w("runners/a/oldstyle.json", '{"model": "claude-3-5-sample-20200101", "k": "s' + 'k-' + fake + '"}\n')
+        w("runners/a/leak.sh", '#!/bin/sh\nTOK' + 'EN=' + fake + ' claude -p "x" --model claude-new-2\n')
         w("runners/a/split.sh", '#!/bin/sh\n"$CLAUDE_BIN" \\\n  -p "$prompt" \\\n  --model "$MODEL"\n')
         w("runners/a/borrow.py", 'import subprocess\nrun(["claude", "-p", prompt])\nrun(["other", "--model", "x", "--effort", "high"])\n')
         w("runners/a/wrapped.py", 'print(subprocess.run(["claude", "-p", prompt]))\n')
@@ -821,7 +823,7 @@ def selftest():
         w("runners/a/varexec.sh", '#!/bin/sh\n"$AI_CLI" -p "$prompt"\nmkdir -p "$OUT"\n"$TMUX_BIN" -L "$SOCK" capture-pane -p -t x\n')
         w("runners/a/varargv.py", 'subprocess.run([cli, "-p", prompt])\n')
         w("runners/a/shift.sh", '#!/bin/sh\nx=$(( 1 << n ))\nclaude -p "$x" --model claude-new-2 --effort low\n')
-        w("runners/a/creds.sh", '#!/bin/sh\nAPI_KEY=ab.cd/ef claude -p "see https://bob:hunter2@example.test/x" --model claude-new-2\n')
+        w("runners/a/creds.sh", '#!/bin/sh\nAPI_K' + 'EY=ab.cd/ef claude -p "see https://bob' + ':hunter2@example.test/x" --model claude-new-2\n')
         w("docs/howto.md", "跑這行：\n\n    claude -p \"$PROMPT\"\n")
         with open(os.path.join(root, "runners", "a", "crlf.sh"), "wb") as fh:
             fh.write(b'#!/bin/sh\r\nclaude \\\r\n  -p "$x" \\\r\n  --model claude-new-2\r\n')
@@ -852,7 +854,7 @@ def selftest():
         add("印訊息、記 log 裡的 claude -p 不算呼叫，另計提到次數", "talk.sh" not in by and len([x for x in res["mentions"] if x["file"].endswith("talk.sh")]) == 3)
         add("看不到執行檔名稱的清單（有 -p 與 --model）列為不確定，model 認成變數", one("argv.py").get("status") == "uncertain" and one("argv.py").get("model_kind") == "variable")
         add("舊式命名（版本在前）的 ID 也抓得到", ("oldstyle.json", "claude-3-5-sample-20200101", "unknown") in st)
-        add("報告裡的指令片段遮掉長串英數", "abcdefghijklmnopqrstuvwxyz0123456789" not in one("leak.sh").get("text", "abcdefghijklmnopqrstuvwxyz0123456789"))
+        add("報告裡的指令片段遮掉長串英數", fake not in one("leak.sh").get("text", fake))
         add("run.sh 有 model 沒 effort", one("run.sh").get("effort") is False)
         add("常駐啟動指令：帶日期尾碼的現役 ID 算現役", la.get("launch.sh", {}).get("effort") is True and "claude-new-2-20300101" in res["ids"]["runners"].get("current", {}))
         add("程式檔裡的 legacy 被列出", ("run.sh", "claude-old-1", "legacy") in st)

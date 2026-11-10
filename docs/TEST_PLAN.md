@@ -74,6 +74,26 @@ cd "$(mktemp -d)" && git init -q . && npx --yes skills@latest add <repo根目錄
 
 **通過**：回報 `Installed 14 skills`（與 repo 現有支數一致）、0 個 Skipped。
 
+### REG-03b ✋ plugin 路徑沙盒安裝煙霧
+
+REG-03 只驗 `npx skills add` 那條路（扁平裝進 `.agents/skills/`）。plugin 這條路走的是另一套安裝器與命名空間，要另外驗。用臨時設定目錄裝，不碰真的設定：
+
+```bash
+CFG=$(mktemp -d)
+CLAUDE_CONFIG_DIR=$CFG claude plugin marketplace add tingyulu/MyR2D2
+CLAUDE_CONFIG_DIR=$CFG claude plugin install myr2d2@myr2d2
+ls "$CFG"/plugins/cache/myr2d2/myr2d2/*/skills | wc -l
+```
+
+**通過**（四條都要）：
+
+1. 裝到 `$CFG/plugins/cache/myr2d2/myr2d2/<version>/`，`skills/` 底下的目錄數與 repo 支數一致（現為 14）。
+2. 腳本類 skill 的每支腳本，裝出來那份的 sha256 與 repo 同一個 commit 的一致。
+3. 用**裝出來的那份**跑測試全過：`sh <安裝目錄>/skills/systems-check/tests/run.sh` 與 `sh <安裝目錄>/skills/model-change/tests/run.sh` 都是 `ALL PASS`（兩支測試自己會把家目錄指到臨時目錄，不讀真資料）。
+4. 真的 `~/.claude/plugins/installed_plugins.json` 與 `known_marketplaces.json` 前後雜湊不變。
+
+限制：只驗安裝層與腳本的執行層，**不驗發現層**（session 會不會真的載入 plugin 的 skill）；`marketplace add` 要連得到 GitHub；裝到的內容是 GitHub main 當下的樣子，版本目錄名取自當下的 `plugin.json`，所以要在推上去之後跑。人工項，不進 CI。
+
 ### REG-04 🟢 公開內容守門
 
 跑 repo `CLAUDE.md` 鐵則 1 的守門 grep（含 `--untracked` 與 `-i`），除已知預期命中外 0 命中。
@@ -438,13 +458,15 @@ python3 skills/systems-check/scripts/selfcheck_scan.py --selftest
 
 ### G-04 🟢 CI 在 Linux 真跑
 
-`.github/workflows/ci.yml` 有具名 step 跑 `sh skills/systems-check/tests/run.sh`。本 skill 開發全程在 macOS，**Linux 的第一次真跑就是 CI**；非 macOS 沒有 `~/Library/LaunchAgents` 時記 notes 不記 incomplete（G-02 的 rc 0 就靠這條）。
+`.github/workflows/ci.yml` 有具名 step 跑 `sh skills/systems-check/tests/run.sh`。本 skill 開發全程在 macOS，**Linux 的第一次真跑就是 CI**；非 macOS 沒有 `~/Library/LaunchAgents` 時記 notes 不記 incomplete（G-02 的 rc 0 就靠這條）。G-02 與 G-03 另在 v0.8.0 發版前用 plugin 安裝出來的那份實跑過一次（做法見 REG-03b）。
 
 首跑結果（2026-10-01）：第一次就紅——自測 23 在 Linux 失敗，因為多數 Linux 檔案系統沒有 `st_birthtime`，原碼拿不到就「不降級」，新檔永遠不會被標 too_young；改成取 mtime／ctime 較早者估（`c3b4752`）後 39/39 綠。教訓：平台假設要靠真跑驗，macOS 綠 ≠ Linux 綠。
 
 ### G-05 ✋ 真專案端到端（每個 release 至少一次）
 
 在一個真的專案跑 `--report-only`，人工看 `report.md` 的假陽性率；`.claude/systems-check/latest` 指向本次；全程 `access.log` 不含專案外路徑。外部觀測者驗法見 SKILL.md「驗證輔具」節。
+
+本次記錄（2026-11-10，對本 repo 自己跑，scanner 1.0.0）：候選 15 條（high 2／low 13）、112 條規則、退出碼 1（partial）。人核結果：**假陽性 4／15（27%）**——2 條 high 是同一天新加的自測假金鑰字串、2 條是印給使用者看的安裝說明；另 6 條 `rm -rf "$TMP"` 模式屬實但風險不成立（清 mktemp 目錄）；屬實的觀察 5 條（常駐脈絡熱點 2、30 天沒被讀的 memory 3），沒有需要馬上處理的。high 等級精確率 0／2，已把那兩個測試字串改成執行時才拼出來，重掃 high 歸零。規則衝突 0、數字過期 1。外部觀測者：`open` 296 次全在允許範圍內，別的專案目錄只有 `lstat`／`stat`。兩個掃描器自己的觀察留待後續：沒有排程的專案也會因為無關的 LaunchAgents 回 partial；`usage.json` 的 30 天視窗裡出現視窗外的日期。⚠️ 只有一個專案、一次，而且這個 repo 沒有 log 與排程，log 那一軸等於沒驗。
 
 ---
 
