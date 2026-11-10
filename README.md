@@ -117,7 +117,7 @@ skill 裝進去的是當下快照，**有新版不會自動通知**。更新方�
 npx skills update
 ```
 
-一行更新所有已裝 skill（來源記在安裝時的 lock 檔；`-g`／`-p` 限定全域／專案層）。Plugin 路徑裝的改用 `/plugin` 介面更新 marketplace。想在新版發布時收到通知：GitHub 上對本 repo **Watch → Custom → Releases**。
+一行更新所有**已裝**的 skill（來源記在安裝時的 lock 檔；`-g`／`-p` 限定全域／專案層）。⚠️ 這個 repo **後來新增的 skill 不會被 `update` 帶進來**，要再跑一次 `npx skills add tingyulu/MyR2D2`。Plugin 路徑裝的跑兩行再重開 Claude Code：`claude plugin marketplace update myr2d2`、`claude plugin update myr2d2@myr2d2`（只更新 marketplace 不會升級已裝的 plugin）。想在新版發布時收到通知：GitHub 上對本 repo **Watch → Custom → Releases**。
 
 ## 一組 skill、兩種語言習慣
 

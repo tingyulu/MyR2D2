@@ -117,7 +117,7 @@ Installed skills are point-in-time snapshots — **new releases won't notify you
 npx skills update
 ```
 
-One command updates every installed skill (sources are recorded in the install-time lock file; `-g`/`-p` scopes to global/project). For plugin installs, update the marketplace via the `/plugin` UI. To get notified on new releases: **Watch → Custom → Releases** on this repo.
+One command updates every skill you **already have installed** (sources are recorded in the install-time lock file; `-g`/`-p` scopes to global/project). ⚠️ Skills **added to this repo later are not pulled in by `update`** — run `npx skills add tingyulu/MyR2D2` again to get them. For plugin installs, run two commands and restart Claude Code: `claude plugin marketplace update myr2d2`, then `claude plugin update myr2d2@myr2d2` (updating the marketplace alone does not upgrade the installed plugin). To get notified on new releases: **Watch → Custom → Releases** on this repo.
 
 ## One skill set, two language habits
 
