@@ -56,6 +56,19 @@ EOF
 	chmod +x "$STUB/codex"
 }
 
+# 啟動檔隔離：zsh 連非互動執行都會讀 ~/.zshenv（bash 會讀 $BASH_ENV）。那裡若把含真 codex 的目錄塞到 PATH
+# 最前面，下面每個 stub 都會被繞過，測試變成真的呼叫後端（燒額度、連網）。把 ZDOTDIR 指到空目錄，
+# zsh 就讀不到使用者的啟動檔；其他 shell 不看這個變數。
+unset BASH_ENV ENV
+ZDOTDIR="$W/zdot"; mkdir -p "$ZDOTDIR"; export ZDOTDIR
+# 自我檢查：受測 shell 看到的 codex 必須是 stub。不是就整支停下，寧可不測也不真的打後端。
+mkstub 0 ""
+SEEN=$(env PATH="$STUB:/usr/bin:/bin" $SH -c 'command -v codex' 2>/dev/null)
+[ "$SEEN" = "$STUB/codex" ] || {
+	echo "❌ stub 被繞過：$SH 看到的 codex 是「${SEEN:-找不到}」，不是 $STUB/codex（多半是 shell 啟動檔改了 PATH）。停止，以免真的呼叫後端。" >&2
+	exit 1
+}
+
 echo "受測腳本：$S"
 echo "執行 shell：$SH"
 echo

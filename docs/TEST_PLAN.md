@@ -94,6 +94,8 @@ ls "$CFG"/plugins/cache/myr2d2/myr2d2/*/skills | wc -l
 
 限制：只驗安裝層與腳本的執行層，**不驗發現層**（session 會不會真的載入 plugin 的 skill）；`marketplace add` 要連得到 GitHub；裝到的內容是 GitHub main 當下的樣子，版本目錄名取自當下的 `plugin.json`，所以要在推上去之後跑。人工項，不進 CI。
 
+實跑記錄（2026-11-10，v0.9.0 發版前，main 在 `757f7ef`）：四條全過。裝出 14 個 skill 目錄；13 個腳本、測試與範本檔的 sha256 與 repo 一致；用裝出來的那份跑 systems-check 與 model-change 的 `tests/run.sh` 都是 `ALL PASS`；真設定的兩個 json 前後雜湊不變。版本目錄名是 `0.8.0`，因為當時 `plugin.json` 還沒 bump，內容已是含第 14 支的 main。
+
 ### REG-04 🟢 公開內容守門
 
 跑 repo `CLAUDE.md` 鐵則 1 的守門 grep（含 `--untracked` 與 `-i`），除已知預期命中外 0 命中。
@@ -281,6 +283,8 @@ for s in /bin/sh /bin/dash /bin/bash /bin/ksh /bin/zsh; do SH=$s sh skills/ai-re
 **通過**：語法全過；每個 shell 皆 41/41（缺 `python3`+`pyyaml` 時 40 過 1 略過）。
 狀態（2026-08-21）：✅ 已實測，macOS 27 上 5 shell 皆 41/41；外部 `export AI_REVIEW_CMD` 污染下結果不變（隔離生效）；`npx skills add` 後 `tests/` 隨 skill 一起裝出（2026-08-20 驗）。
 
+⚠️ 啟動檔隔離（v0.9.0 起）：矩陣開頭把 `ZDOTDIR` 指到空目錄並清掉 `BASH_ENV`／`ENV`，再檢查受測 shell 看到的 `codex` 確實是 stub，不是就整支停下。由來：zsh 連非互動執行都會讀 `~/.zshenv`，那裡若把含真 `codex` 的目錄放到 PATH 最前面，stub 會被繞過、測試變成真的呼叫後端；發版前在開發機上實際發生過（zsh 那一輪 18 項失敗並打到真後端），CI 的乾淨環境看不出來。
+
 ### E-02 🟡 真實後端 ok 路徑
 
 ```bash
@@ -409,6 +413,8 @@ for s in /bin/sh /bin/dash /bin/bash /bin/ksh /bin/zsh; do SH=$s sh skills/ai-se
 狀態（2026-08-24）：✅ 已於 macOS 27 五 shell 實測 42 過 1 略（本機無 pyyaml；frontmatter 另以
 `/usr/bin/python3`+yaml 6.0.3 獨立驗過為合法）；Linux 由 CI（ubuntu-latest）每次 push 實跑。
 
+⚠️ 啟動檔隔離（v0.9.0 起）：矩陣開頭把 `ZDOTDIR` 指到空目錄並清掉 `BASH_ENV`／`ENV`，再檢查受測 shell 看到的 `codex` 確實是 stub，不是就整支停下。由來：zsh 連非互動執行都會讀 `~/.zshenv`，那裡若把含真 `codex` 的目錄放到 PATH 最前面，stub 會被繞過、測試變成真的呼叫後端；發版前在開發機上實際發生過（zsh 那一輪 18 項失敗並打到真後端），CI 的乾淨環境看不出來。
+
 ### F-02 🟡 真實後端 ok 路徑
 
 ```bash
@@ -518,6 +524,6 @@ python3 skills/model-change/scripts/model_audit.py --selftest
 
 註（2026-10-01）：新增 systems-check（第 13 支，G 段）。資料來源同日誌三支（Claude Code 自家 `~/.claude`），各工具評級比照 ❌；REG-03 通用安裝煙霧重跑＝**Installed 13 skills**、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 未重驗（評級不因新增而變動）。
 
-註（2026-11-10）：新增 model-change（第 14 支，H 段）。掃描器的對象是 Claude Code 的設定與 `claude -p` 呼叫，其他工具只剩檢查表可用，README 矩陣標 ⚠️。**REG-03 通用安裝煙霧這次沒有重跑**（`Installed 14 skills` 尚未實測），發版前要補；per-agent 的 CROSS-01 也未重驗。
+註（2026-11-10）：新增 model-change（第 14 支，H 段）。掃描器的對象是 Claude Code 的設定與 `claude -p` 呼叫，其他工具只剩檢查表可用，README 矩陣標 ⚠️。REG-03 通用安裝煙霧於 v0.9.0 發版前重跑＝**Installed 14 skills**、model-change 在列、0 Skipped；plugin 路徑另照 REG-03b 驗過。per-agent 逐一 `--agent` 的 CROSS-01 未重驗（評級不因新增而變動）。
 
 註（2026-08-29）：**CROSS-01 per-agent 重驗完成，上兩註的「待補」關閉**——gemini-cli／codex 各自乾淨目錄逐一 `--agent` 裝（v0.7.1 working tree），皆 Installed 12、0 Skipped、磁碟實數 12；skills CLI 1.5.23。安裝目標兩者均為統一的 `.agents/skills/`（與 REG-03 通用煙霧同路徑）——安裝層測的是 `npx skills` 安裝器行為，與目標 CLI 自身版本無關，故表內安裝層欄不再綁 CLI 版號；發現層各 CLI 版號快照維持原註。
