@@ -526,4 +526,6 @@ python3 skills/model-change/scripts/model_audit.py --selftest
 
 註（2026-11-10）：新增 model-change（第 14 支，H 段）。掃描器的對象是 Claude Code 的設定與 `claude -p` 呼叫，其他工具只剩檢查表可用，README 矩陣標 ⚠️。REG-03 通用安裝煙霧於 v0.9.0 發版前重跑＝**Installed 14 skills**、model-change 在列、0 Skipped；plugin 路徑另照 REG-03b 驗過。per-agent 逐一 `--agent` 的 CROSS-01 未重驗（評級不因新增而變動）。
 
+註（2026-11-10，v0.9.1）：同日第二版，只修 model-change 掃描器（H 段），skill 數與各工具評級不變。REG-03 通用安裝煙霧於發版前對修正後的工作樹重跑＝**Installed 14 skills**、0 Skipped。plugin 路徑的 REG-03b 這版沒有重跑（安裝結構沒變，掃描器與測試檔的內容由 CI 兩個平台驗）。
+
 註（2026-08-29）：**CROSS-01 per-agent 重驗完成，上兩註的「待補」關閉**——gemini-cli／codex 各自乾淨目錄逐一 `--agent` 裝（v0.7.1 working tree），皆 Installed 12、0 Skipped、磁碟實數 12；skills CLI 1.5.23。安裝目標兩者均為統一的 `.agents/skills/`（與 REG-03 通用煙霧同路徑）——安裝層測的是 `npx skills` 安裝器行為，與目標 CLI 自身版本無關，故表內安裝層欄不再綁 CLI 版號；發現層各 CLI 版號快照維持原註。
