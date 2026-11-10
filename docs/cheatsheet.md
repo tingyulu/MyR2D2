@@ -1,6 +1,6 @@
 # MyR2D2 速查小抄（Cheatsheet）
 
-一張表找齊 13 支 skill 的「什麼時候用、怎麼喊」。安裝與相容性見 [README](../README.md)；觸發詞為節選，完整清單在各 `skills/*/SKILL.md` 的 description。
+一張表找齊 14 支 skill 的「什麼時候用、怎麼喊」。安裝與相容性見 [README](../README.md)；觸發詞為節選，完整清單在各 `skills/*/SKILL.md` 的 description。
 
 ## 收工與交接
 
@@ -33,6 +33,7 @@
 | Skill | 什麼時候用 | 中文觸發 | English |
 |---|---|---|---|
 | `token-optimizer` | 呼叫 Agent／Workflow 派工前必讀的節流規則（自動觸發型） | 「省 token」「配額」 | "save tokens", "don't burn my limit" |
+| `/model-change` | 新模型上線時盤點要跟著改的設定、排程、腳本；只列清單、不自己改 | 「新模型出來了」「換模型要改什麼」 | "new model release", "model migration checklist" |
 | `flight-to-calendar` | 把已訂航班加進 Google Calendar，跨時區正確、傍晚／清晨航段標日落日出座位 | 「把航班加到行事曆」 | "add my flights to the calendar" |
 
 > 🤖 同內容的 4:5 圖卡：[cheatsheet.png](cheatsheet.png)（存進手機相簿隨時翻）。English version: [cheatsheet.en.md](cheatsheet.en.md)。

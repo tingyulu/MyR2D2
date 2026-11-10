@@ -22,7 +22,7 @@
 > import yaml, glob, re, sys
 > fails = 0
 > files = sorted(glob.glob('skills/*/SKILL.md'))
-> assert len(files) == 13, f'skill 數 {len(files)} != 13'
+> assert len(files) == 14, f'skill 數 {len(files)} != 14'
 > for f in files:
 >     m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
 >     try: yaml.safe_load(m.group(1))
@@ -39,6 +39,8 @@
 > for s in sh dash bash ksh zsh; do SH=$s sh skills/ai-search/tests/matrix.sh; done
 > python3 skills/mission-log/tests/harvest_test.py
 > LC_ALL=C python3 skills/mission-log/tests/harvest_test.py
+> sh skills/systems-check/tests/run.sh
+> sh skills/model-change/tests/run.sh
 > ```
 
 ### REG-01 🟢 YAML frontmatter 雙 parser 驗證
@@ -53,7 +55,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 "
 ```
 
-**通過**：全部 skill（現為 13 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
+**通過**：全部 skill（現為 14 支）全 `OK`。有第二個 parser（ruby psych／js-yaml）就交叉驗。這是 v0.1.1 事故的直接回歸項。
 ⚠️ 驗證器自己也要驗：跑一次**故意壞掉的 YAML**（如 `description: bad: colon`）確認它真的會 FAIL，否則你可能在看一個永遠說 OK 的空轉腳本。
 
 ### REG-02 🟢 agentskills.io 官方 validator
@@ -62,7 +64,7 @@ for f in sorted(glob.glob('skills/*/SKILL.md')):
 for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 ```
 
-**通過**：全數（現為 13 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
+**通過**：全數（現為 14 支）全過。驗 name 格式（小寫/連字號/=目錄名）、description ≤1024 字等規格硬約束。
 
 ### REG-03 🟢 本地安裝煙霧測試
 
@@ -70,7 +72,7 @@ for d in skills/*/; do npx --yes skills-ref validate "$d"; done
 cd "$(mktemp -d)" && git init -q . && npx --yes skills@latest add <repo根目錄> -y
 ```
 
-**通過**：回報 `Installed 13 skills`（與 repo 現有支數一致）、0 個 Skipped。
+**通過**：回報 `Installed 14 skills`（與 repo 現有支數一致）、0 個 Skipped。
 
 ### REG-04 🟢 公開內容守門
 
@@ -446,6 +448,36 @@ python3 skills/systems-check/scripts/selfcheck_scan.py --selftest
 
 ---
 
+## H. model-change（新模型上線盤點）
+
+掃描器找的是 Claude Code 的設定與 `claude -p` 呼叫，所以相容性評級同 systems-check 那一類：腳本在哪都跑得起來，但別的工具沒有東西可掃，只剩檢查表。測試全部用合成資料，不讀真的 `~/.claude`、不連網。
+
+### H-01 🟢 掃描器內建自測
+
+```bash
+python3 skills/model-change/scripts/model_audit.py --selftest
+```
+
+**通過**：末行 `selftest N/N`、退出碼 0（現為 49/49；建不了符號連結的環境會少兩條並印 `[SKIP]`）。每一條都是「改壞會紅」的行為：跨行指令組成一個單位、旗標不借隔壁指令的、字串裡的指令與變數執行檔列「不確定」而不是當沒事、heredoc 純文字不判讀但後面的真呼叫照樣讀到、引號沒對上的檔整檔降成不確定、連結不跟出根目錄、`--json` 權限 0600、CRLF 檔的續行。⚠️ 負向案例（`mkdir -p`、訊息裡的 `claude -p`、清單裡的資料字串）與正向案例成對出現：只有正向會讓「什麼都列」的掃描器也過關。
+
+### H-02 🟢 命令列四案
+
+`tests/run.sh`：1. 自測；2. 把 `HOME` 指到臨時目錄跑預設範圍，rc 0、選用的 memory 根目錄不存在不算錯、D 段計數逐字比對；3. 自訂範圍加 `--json`，報告是合法 JSON、權限 0600，**被掃目錄的內容與修改時間雜湊前後一致**（「不改被掃的檔」這句宣稱的驗法）；4. 結束碼：根目錄不存在 3、roots 檔壞掉 2、`--json` 寫不出去 4。**通過**：末行 `ALL PASS`。
+
+### H-03 🟢 CI：Linux 全套、Windows 自測
+
+`.github/workflows/ci.yml` 的 `ci` job 跑 `tests/run.sh` 兩次（一般 locale 與 `LC_ALL=C`）；另一個 job `model-audit-windows` 在 windows-latest 跑內建自測。開發全程在 macOS，路徑分隔符、終端機編碼、CRLF 這三件事只有 Windows job 真的驗到。⚠️ Windows 只驗自測，沒有在 Windows 上對真實目錄跑過。
+
+### H-04 ✋ 真實目錄對照（改了判讀規則就重做）
+
+拿同一批真實目錄，新舊兩版各跑一次，逐筆看差異：新版少列的每一筆都要是訊息、說明文字或測試字串，不能是真呼叫。首次對照（2026-11-10，一台機器的設定目錄加本 repo）：舊的固定行窗版列 44 處，其中多數是文件字串與測試資料；改寫版確定 5 處、不確定 3 處，舊版有而新版沒列的逐筆看過，沒有真呼叫。這個對照只有一台機器、一批目錄，不代表別的寫法也不漏。
+
+### H-05 ✋ 換模型時端到端
+
+真的有新模型上線時照 SKILL.md 五步走一輪，記下掃描器沒找到、靠檢查表或人才發現的地方，回頭補成自測案例。公開版尚未跑過這一項。
+
+---
+
 ## C. 相容性結論快照（安裝層 2026-08-29 重驗；發現層仍為 2026-07-30 快照，過期重驗）
 
 | 工具 | 安裝層 | 發現層 | 執行層 |
@@ -463,5 +495,7 @@ python3 skills/systems-check/scripts/selfcheck_scan.py --selftest
 註（2026-08-28）：新增 new-mission（第 12 支，純規則零依賴，比照 damage-report 無專屬測試段；prompts/ 另有免安裝簡版兩檔）。當日重跑 REG-03 通用安裝煙霧＝**Installed 12 skills**、new-mission 在列、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 重驗仍待補（同上註）；評級不因新增而變動。
 
 註（2026-10-01）：新增 systems-check（第 13 支，G 段）。資料來源同日誌三支（Claude Code 自家 `~/.claude`），各工具評級比照 ❌；REG-03 通用安裝煙霧重跑＝**Installed 13 skills**、0 Skipped。per-agent 逐一 `--agent` 的 CROSS-01 未重驗（評級不因新增而變動）。
+
+註（2026-11-10）：新增 model-change（第 14 支，H 段）。掃描器的對象是 Claude Code 的設定與 `claude -p` 呼叫，其他工具只剩檢查表可用，README 矩陣標 ⚠️。**REG-03 通用安裝煙霧這次沒有重跑**（`Installed 14 skills` 尚未實測），發版前要補；per-agent 的 CROSS-01 也未重驗。
 
 註（2026-08-29）：**CROSS-01 per-agent 重驗完成，上兩註的「待補」關閉**——gemini-cli／codex 各自乾淨目錄逐一 `--agent` 裝（v0.7.1 working tree），皆 Installed 12、0 Skipped、磁碟實數 12；skills CLI 1.5.23。安裝目標兩者均為統一的 `.agents/skills/`（與 REG-03 通用煙霧同路徑）——安裝層測的是 `npx skills` 安裝器行為，與目標 CLI 自身版本無關，故表內安裝層欄不再綁 CLI 版號；發現層各 CLI 版號快照維持原註。

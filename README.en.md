@@ -8,7 +8,7 @@
 
 R2-D2 was never the protagonist, but every episode runs on him: smuggling out the Death Star plans, rolling across a desert to find Obi-Wan, quietly fixing the ship and managing power from the back of an X-wing.
 
-That's MyR2D2's job description — 13 skills covering things that "won't kill you if skipped, but keep the whole workflow alive when done":
+That's MyR2D2's job description — 14 skills covering things that "won't kill you if skipped, but keep the whole workflow alive when done":
 
 | Skill | One-liner | R2-D2 parallel |
 |---|---|---|
@@ -21,6 +21,7 @@ That's MyR2D2's job description — 13 skills covering things that "won't kill y
 | **new-mission** | Kickoff brief: look first, ask at most five questions, draft the plan, review it, wait for an explicit "go" — mint a reusable task prompt on the way, and close with a wrap-up report against the plan | R2 projects the Death Star plans; the squadron flies the trench only after the briefing |
 | **damage-report** | Five wrap-up questions run against the original ask before you report; the suggestions field says "none" when there's nothing real | Ship repaired, R2 runs its own diagnostics and beeps the damage report — without waiting for Luke to ask |
 | **systems-check** | Periodic health check: rule conflicts and duplicates, suspected-unused items, unhandled errors in logs, security smells; finds and files cards, never fixes | After the hit, R2 crawls out on the hull and beeps back which lines are cut — it doesn't weld, it reports and backs off |
+| **model-change** | New-model inventory: finds hardcoded model IDs and headless calls with no model set, then walks a ten-item checklist into a decision list; takes stock, never changes settings itself | The hyperdrive is fixed and still won't jump — only R2 knows it was switched off from somewhere else |
 | **ai-review** | Send the work to **another model** for a second opinion, digest it, then write the report; says "self-review only" when no backend is there | R2 and C-3PO bicker for six films — each covering the other's blind half |
 | **ai-search** | Ask once, get a **cited, checkable** live answer; says "not found" instead of filling from stale training data | R2 jacks into an Imperial terminal — reading live station data, not stale intel from memory |
 | **token-optimizer** | Iron rules before multi-agent dispatch: model tiering, compressed reporting, stop after 3 failures | Power allocation — don't let shields drain the engines |
@@ -44,6 +45,7 @@ Start here — check which skills your tool can run:
 | new-mission | ✅ | ✅ (rules-only, zero tool deps) | ✅ (rules-only) | ✅ (rules-only) | ⚠️ paste as a kickoff protocol |
 | damage-report | ✅ | ✅ (rules-only, zero tool deps) | ✅ (rules-only) | ✅ (rules-only) | ⚠️ paste as a wrap-up checklist |
 | systems-check | ✅ (python3 + a local `~/.claude`) | ❌ (no local `~/.claude`)⁶ | ❌⁶ | ❌⁶ | ❌⁶ |
+| model-change | ✅ (python3 + a local `~/.claude` and the script dirs you list) | ⚠️ checklist only (no local config to scan)⁷ | ⚠️ checklist only⁷ | ⚠️ checklist only⁷ | ⚠️ paste as a checklist⁷ |
 | ai-review | ✅ (needs a review backend⁴) | ⚠️ rules work; the script needs a shell | ⚠️ same | ⚠️ same | ⚠️ use prompts/ in another AI |
 | ai-search | ✅ (needs a search backend⁵) | ⚠️ rules work; the script needs a shell | ⚠️ same | ⚠️ same | ⚠️ use prompts/ with built-in browsing |
 | token-optimizer | ✅ | ✅ (rules-only, no tool deps) | ⚠️ principles port¹ | ⚠️ principles port¹ | ⚠️ principles port¹ |
@@ -56,6 +58,7 @@ Start here — check which skills your tool can run:
 ⁴ `ai-review` needs a review backend (Codex CLI by default, swappable via `AI_REVIEW_CMD`) plus a POSIX shell. No backend or not signed in → `skipped_*` and it still **exits 0**, so it never breaks your flow (automation should parse the final `AI_REVIEW_STATUS:` line on stdout to tell "skipped" from "reviewed"); quota/network failures exit 2 by default, and `--soft-fail` makes those exit 0 too. It deliberately pins no model (pinned names go stale); if the backend's default model is outside your plan, pass `--model`. Verified on macOS under `sh`/`dash`/`bash`/`ksh`/`zsh`, and on Linux via CI (ubuntu-latest) on every push; **Windows and free-tier accounts remain untested**.
 ⁵ `ai-search` shares ai-review's architecture (single-file POSIX shell, status on stdout, exit codes only mark real failures, and it ships its own 43-item behavior matrix that runs in CI on every push); the difference is it needs a backend that **actually searches the web** (Codex CLI's built-in `web_search` by default, swappable via `AI_SEARCH_CMD` — but the replacement must also search; a plain LLM just fills from stale knowledge). No backend or not signed in → `skipped_*` and exit 0 — automation that only checks exit codes reads "skipped" as success; parse the final `AI_SEARCH_STATUS:` line on stdout to tell them apart. ChatGPT web has its own browsing — use the lite prompt in `prompts/ai-search.md`; the script isn't needed there.
 ⁶ `systems-check` scans **Claude Code's own `~/.claude`** (rules, skills, hooks, settings, project memory and transcripts); the three scripts are stdlib-only python3 and run anywhere, but other tools don't have that data, so there is nothing to scan — hence ❌. Runner/schedule detection supports macOS launchd only; other platforms log a note and skip it.
+⁷ The `model-change` scanner looks for **Claude Code configuration and `claude -p` calls** (hardcoded model IDs, headless calls missing `--model` / `--effort`, long-running launch commands). The script is stdlib-only python3 and runs anywhere, but other tools have nothing for it to scan; what remains is the ten-item checklist as a reminder list for a model switch, and it is written around Claude's models and CLI. Developed on macOS; CI runs the full test script on Linux on every push and the built-in selftest on Windows.
 
 - **Gemini CLI / Codex CLI**: install & discovery layers verified — including Gemini's trusted-folder gate (if skills don't show up, trust the project folder first); execution layer untested.
 - **ChatGPT**: no CLI / no filesystem — manual paste is the only path (see adapters).
@@ -104,7 +107,7 @@ No CLI, nothing to install: [prompts/](prompts/) has paste-ready lite versions �
 
 First get the repo via the manual-copy `git clone` (or **Code → Download ZIP** on the GitHub page), then add the skill folders you want (`skills/<name>/`) to your Cowork project skills (or the project's `.claude/skills/`).
 
-Then trigger with `/save-all`, `/dropoff`, `/pickup`, `/daily-debrief`, `/new-mission`, `/damage-report`, `/systems-check`, `/ai-review`, `/ai-search`, etc., or natural language in either language.
+Then trigger with `/save-all`, `/dropoff`, `/pickup`, `/daily-debrief`, `/new-mission`, `/damage-report`, `/systems-check`, `/model-change`, `/ai-review`, `/ai-search`, etc., or natural language in either language.
 
 ## Updating
 
@@ -137,6 +140,7 @@ Claude follows the zh-TW instructions and replies in whatever language you speak
 | new-mission | None (pure rules; the `ai-review` hookup in step 3's advanced section is an optional cross-reference) |
 | damage-report | None (pure rules; the `/dropoff` mention in Q5 and the `ai-review` upgrade section are optional cross-references) |
 | systems-check | **python3** (stdlib only; ships `--selftest` and `tests/run.sh`). Scans Claude Code's own `~/.claude` (rules / skills / hooks / settings / project memory and transcripts), read-only; git optional (only `ls-files` / `rev-parse` to list names) |
+| model-change | **python3** (stdlib only; ships `--selftest` and `tests/run.sh`). Scans the Claude Code config directory plus the script directories you list; never modifies scanned files, no network; the `mission-log` mention in step 2 is an optional cross-reference |
 | ai-review | **A review backend** (Codex CLI by default; `AI_REVIEW_CMD` swaps in any command that reads stdin and writes stdout) plus a POSIX shell. No extra packages: no npm module, no brew formula, no API key of your own. Ships 41 regression tests (`tests/matrix.sh`, no quota burned) |
 | ai-search | **A web-searching backend** (Codex CLI's built-in `web_search` by default; `AI_SEARCH_CMD` swaps it, but the replacement must also search) plus a POSIX shell. No extra packages. Ships 43 regression tests (`tests/matrix.sh`, no quota burned, no network) |
 | token-optimizer | None (rules-only; Workflow-specific items need the Workflow tool — Workflow is Claude Code's multi-agent orchestration feature; §1's advanced backstop is Claude Code CLI-only) |
@@ -158,15 +162,15 @@ dropoff/pickup default to the zero-dependency file-based version; if you run you
 MyR2D2/
 ├── .claude-plugin/                    ← plugin.json + marketplace.json (single plugin)
 ├── .github/workflows/                 ← CI (YAML validation, content gate, behavior matrix, harvest tests, tag vs version)
-├── skills/                            ← 13 skills (zh-TW body, bilingual triggers)
+├── skills/                            ← 14 skills (zh-TW body, bilingual triggers)
 │   ├── save-all/  ├── dropoff/  ├── pickup/
 │   ├── mission-log/  ├── daily-debrief/  ├── weekly-debrief/
 │   ├── new-mission/  ├── damage-report/  ├── systems-check/
-│   ├── ai-review/  ├── ai-search/  ├── token-optimizer/
-│   └── flight-to-calendar/
+│   ├── model-change/  ├── ai-review/  ├── ai-search/
+│   ├── token-optimizer/  └── flight-to-calendar/
 ├── prompts/                           ← no-install lite prompts (paste into any chat)
 ├── docs/                              ← test plan + verification notes for external claims
-│   └── cheatsheet.en.md               ← 13-skill cheat sheet (with 4:5 png card; 中文版 cheatsheet.md)
+│   └── cheatsheet.en.md               ← 14-skill cheat sheet (with 4:5 png card; 中文版 cheatsheet.md)
 ├── adapters/openai/                   ← ChatGPT / Codex porting kit
 ├── README.md                          ← zh-TW (primary)
 └── README.en.md                       ← this page

@@ -1,6 +1,6 @@
 # MyR2D2 Cheat Sheet
 
-All 13 skills on one page: when to use each one, and what to say to trigger it. For install and compatibility, see the [README](../README.en.md). Triggers are a sample; the full lists live in each `skills/*/SKILL.md` description.
+All 14 skills on one page: when to use each one, and what to say to trigger it. For install and compatibility, see the [README](../README.en.md). Triggers are a sample; the full lists live in each `skills/*/SKILL.md` description.
 
 ## Wrap-up & Handoff
 
@@ -33,6 +33,7 @@ All 13 skills on one page: when to use each one, and what to say to trigger it. 
 | Skill | When to use | English | 中文 |
 |---|---|---|---|
 | `token-optimizer` | Budget rules to read before dispatching Agent / Workflow jobs (auto-triggers) | "save tokens", "don't burn my limit" | 「省 token」「配額」 |
+| `/model-change` | When a new model ships: take stock of the settings, schedules and scripts that must follow; lists, never changes them itself | "new model release", "model migration checklist" | 「新模型出來了」「換模型要改什麼」 |
 | `flight-to-calendar` | Add booked flights to Google Calendar with correct time zones; on dusk and dawn legs, flags the sunset or sunrise seat side | "add my flights to the calendar" | 「把航班加到行事曆」 |
 
 > 🤖 Same content as a 4:5 card: [cheatsheet.en.png](cheatsheet.en.png) (save it to your phone's photos). The card is rendered from [cheatsheet.en.html](cheatsheet.en.html); the render command is in a comment at the top of that file. 中文版：[cheatsheet.md](cheatsheet.md).

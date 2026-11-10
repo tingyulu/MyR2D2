@@ -127,31 +127,32 @@ skill 的行為／觸發詞／依賴一改，**同一個 commit 內**掃完下�
 
 | 位置（錨點） | 行號快照 | 內容 |
 |---|---|---|
-| `README.md` 開頭定位句 | L11 | 「**13 支** skills」計數字串 |
-| `README.md` skill 總表 | L13–26 | 一句話＋R2-D2 對應 |
-| `README.md` `## 這套東西怎麼開發的` | L28–32 | 失憶引言＋自我修正敘事（二審缺陷數、測項數——測試計數一變這裡也要動） |
-| `README.md` `## 相容性矩陣` | L34–61 | 五欄：CLI／Cowork／Gemini／Codex／ChatGPT，含 ✅\* 分級註、trusted-folder、日誌三支資料來源、門鈴註³、ai-review 後端註⁴、未實測範圍註記 |
-| `README.md` `## 安裝` 末句「裝完打…」 | L104 | 逐一點名可觸發的斜線命令 |
-| `README.md` `## 更新` | L106–114 | `npx skills update`／plugin 更新法／Watch Releases 通知 |
-| `README.md` `## 一組 skill、兩種語言習慣` | L116–123 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
-| `README.md` `## 各 skill 的依賴` | L125–141 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
-| `README.md` `## Repo 結構` tree | L151–167 | skill 目錄名＋「13 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
-| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 191 行**，改完要複驗仍對齊） |
+| `README.md` 開頭定位句 | L11 | 「**14 支** skills」計數字串 |
+| `README.md` skill 總表 | L13–28 | 一句話＋R2-D2 對應 |
+| `README.md` `## 這套東西怎麼開發的` | L30–34 | 失憶引言＋自我修正敘事（二審缺陷數、測項數——測試計數一變這裡也要動） |
+| `README.md` `## 相容性矩陣` | L36–67 | 五欄：CLI／Cowork／Gemini／Codex／ChatGPT，含 ✅\* 分級註、trusted-folder、日誌三支資料來源、門鈴註³、ai-review 後端註⁴、未實測範圍註記 |
+| `README.md` `## 安裝` 末句「裝完打…」 | L110 | 逐一點名可觸發的斜線命令 |
+| `README.md` `## 更新` | L112–120 | `npx skills update`／plugin 更新法／Watch Releases 通知 |
+| `README.md` `## 一組 skill、兩種語言習慣` | L122–129 | **逐字引用各 skill description 的中英觸發詞例句**，改觸發詞必同步 |
+| `README.md` `## 各 skill 的依賴` | L131–149 | 依賴表（日誌三支的相依關係、門鈴選用增強、ai-review 的後端需求在此宣告；ai-review 格含**測項數**——測試計數一變這裡也要動） |
+| `README.md` `## Repo 結構` tree | L159–177 | skill 目錄名＋「14 支 skill」計數＋`prompts/`／`docs/`／`.github/` 列 |
+| `README.en.md` | 同上各項 | 對應英文列（**兩檔行號目前完全對齊，各 195 行**，改完要複驗仍對齊） |
 | `prompts/<skill>.md`＋`.en.md` | — | **免安裝簡版**（規則類 skill 適用，damage-report 首例）：skill 的五問／規則本體一改，簡版兩檔要同步改寫，別讓簡版變舊版 |
 | `docs/cheatsheet.md`＋`cheatsheet.en.md`＋兩張 png | — | **速查小抄**：skill 數、一句話定位、觸發詞節選。新增／刪除 skill、改一句話或觸發詞，兩個語言的 md 與圖卡都要跟著改；兩張圖卡都有 HTML 原始檔（`cheatsheet.html`／`cheatsheet.en.html`，重截指令寫在檔頭註解），改 md 後要同步改 HTML 再重截 png |
 | `docs/TEST_PLAN.md` C 段快照 | 文末表格 | 相容性結論快照——README 矩陣評級一動，這裡要同步（反之亦然，見 TEST_PLAN CROSS-07） |
 | `docs/TEST_PLAN.md` D 段 | C 段之前 | 交接門鈴測項 D-01～06——dropoff/pickup 的門鈴行為一改要同步 |
+| `docs/TEST_PLAN.md` G、H 段 | F 段之後 | systems-check（G）與 model-change（H）的測項——掃描器行為、自測案數、CI 涵蓋的平台一改要同步（README 註⁶、註⁷ 的平台敘述在這裡對照） |
 | `docs/TEST_PLAN.md` E 段＋`docs/AI_REVIEW_SOURCES.md` | D 段之後 | ai-review 測項 E-01～09 與**外部前提的查證原文**（方案涵蓋、安裝／登入指令）——腳本行為或引導文字一改要同步；查證超過兩週視為過期 |
 | `.claude-plugin/plugin.json` | L3 | `description` 逐一點名各 skill |
 | `.claude-plugin/marketplace.json` | L11 | `plugins[0].description` 同上 |
-| `adapters/openai/README.md` 可移植性總表 | L12–17 | 四列對應四組 skill |
-| `adapters/openai/README.md` Codex 安裝腳本 | L40 | 備援法 `for s in ...` 的 skill 清單 |
+| `adapters/openai/README.md` 可移植性總表 | L12–24 | 一列一組 skill |
+| `adapters/openai/README.md` Codex 安裝腳本 | L47 | 備援法 `for s in ...` 的 skill 清單 |
 
 ⚠️ `adapters/openai/README.md` 的矩陣是**獨立撰寫、非複製貼上**（用字與判斷邏輯都跟 README 不同）—— 要人工比對邏輯是否仍成立，不能只靠 diff 對照。
 
 📌 `plugin.json` 的 `keywords` 是**代表性關鍵字，不是 skill 清單**（現況本來就沒窮舉 5 支），不必逐 skill 同步 —— 別誤判成遺漏。
 
-新增／刪除 skill 時額外要改：兩份 README 的計數字串；若可移植到 Codex，`adapters/openai/README.md` L28 的迴圈清單要加名；若有硬依賴（如需 MCP connector）而搬不動，在 adapters 矩陣標 ❌ 並寫原因（比照 `flight-to-calendar` 先例）。
+新增／刪除 skill 時額外要改：兩份 README 的計數字串；若可移植到 Codex，`adapters/openai/README.md` 備援法那個 `for s in ...` 迴圈的清單要加名；若有硬依賴（如需 MCP connector）而搬不動，在 adapters 矩陣標 ❌ 並寫原因（比照 `flight-to-calendar` 先例）。
 
 ---
 

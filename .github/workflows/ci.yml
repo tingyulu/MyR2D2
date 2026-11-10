@@ -24,8 +24,8 @@ jobs:
           import yaml, glob, re, sys
           fails = 0
           files = sorted(glob.glob('skills/*/SKILL.md'))
-          if len(files) != 13:
-              print(f'FAIL skill 數量 {len(files)} != 13(新增/刪除 skill 要同步改這裡與 README 計數)')
+          if len(files) != 14:
+              print(f'FAIL skill 數量 {len(files)} != 14(新增/刪除 skill 要同步改這裡與 README 計數)')
               fails += 1
           for f in files:
               m = re.match(r'^---\n(.*?)\n---\n', open(f, encoding='utf-8').read(), re.S)
@@ -125,6 +125,11 @@ jobs:
       - name: systems-check 回歸(內建 selftest＋乾淨專案零候選＋衝突 fixture;第一次在 Linux 真跑)
         run: sh skills/systems-check/tests/run.sh
 
+      - name: model-change 回歸(內建 selftest＋預設範圍＋自訂範圍與 --json＋結束碼;LC_ALL=C 再跑一次)
+        run: |
+          sh skills/model-change/tests/run.sh
+          LC_ALL=C sh skills/model-change/tests/run.sh
+
       - name: 版號對 tag(鐵則 4:tag 必須等於 .claude-plugin/plugin.json 的 version;只在推 v* tag 時跑)
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -134,3 +139,12 @@ jobs:
             exit 1
           fi
           echo "OK tag $GITHUB_REF_NAME == plugin.json $V"
+
+  # model-change 的掃描器宣稱跨平台(路徑分隔符正規化、終端機編碼、CRLF);開發在 macOS、上面那個 job 在 Linux,
+  # Windows 只有這裡真跑。只跑內建自測:tests/run.sh 是 POSIX shell,不在這裡跑。
+  model-audit-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: model-change 掃描器內建自測(Windows)
+        run: python skills/model-change/scripts/model_audit.py --selftest
